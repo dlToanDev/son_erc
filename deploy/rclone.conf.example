@@ -1,0 +1,8 @@
+# MẪU cấu hình rclone. Trên VPS: `cp deploy/rclone.conf.example deploy/rclone.conf`
+# rồi dán khối [gdrive] thật vào deploy/rclone.conf (xem DEPLOY.md mục Backup offsite).
+# Để TRỐNG (không có remote) = tắt đẩy cloud, backup vẫn lưu local.
+#
+# [gdrive]
+# type = drive
+# scope = drive
+# token = {"access_token":"...","refresh_token":"...","expiry":"..."}

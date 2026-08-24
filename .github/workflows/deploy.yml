@@ -1,0 +1,32 @@
+# Deploy thủ công lên VPS qua SSH (Actions → Deploy → Run workflow).
+# Secrets cần cấu hình: VPS_HOST · VPS_USER · VPS_SSH_KEY (private key).
+# VPS đã có: repo tại /opt/debtflow, file .env production, docker + compose.
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag image (rollback: nhập tag cũ)'
+        required: false
+        default: 'latest'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/debtflow
+            git fetch --all
+            git checkout ${{ github.sha }}
+            export IMAGE_TAG=${{ inputs.image_tag }}
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml ps

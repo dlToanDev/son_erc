@@ -1,0 +1,93 @@
+# DebtFlow — PRODUCTION.
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Cấu hình qua .env (xem .env.production.example). Rollback: đặt IMAGE_TAG cũ rồi up lại.
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?bắt buộc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?bắt buộc}
+      POSTGRES_DB: ${POSTGRES_DB:?bắt buộc}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: debtflow-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      API_PORT: 3000
+      CORS_ORIGIN: ${CORS_ORIGIN:?bắt buộc — https://domain-cua-ban}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?bắt buộc}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?bắt buộc}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      # Thư mục backup (mount read-only) — dùng cho nút "Khôi phục bản gần nhất".
+      BACKUP_DIR: /backups
+    volumes:
+      - backups:/backups:ro
+
+  nginx:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: debtflow-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '${NGINX_HTTP_PORT:-80}:80'
+      - '${NGINX_HTTPS_PORT:-443}:443'
+    volumes:
+      # Let's Encrypt (điền bởi init-letsencrypt.sh; trống thì chạy HTTP thuần).
+      - letsencrypt:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+
+  # Backup pg_dump mỗi ngày vào volume `backups` + đẩy offsite lên cloud (rclone).
+  backup:
+    build:
+      context: .
+      dockerfile: deploy/backup.Dockerfile
+    image: debtflow-backup:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # Backup mỗi ngày lúc BACKUP_AT theo giờ Việt Nam.
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      BACKUP_AT: ${BACKUP_AT:-23:00}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      # Đẩy offsite lên Google Drive (đề phòng cả VPS chết). Trống = tắt.
+      RCLONE_REMOTE: ${RCLONE_REMOTE:-}
+      RCLONE_KEEP_DAYS: ${RCLONE_KEEP_DAYS:-30}
+      RCLONE_CONFIG: /config/rclone.conf
+    volumes:
+      - ./deploy/backup.sh:/backup.sh:ro
+      # Cấu hình rclone (token Google Drive) — tạo 1 lần bằng `rclone config` rồi đặt vào đây.
+      - ./deploy/rclone.conf:/config/rclone.conf:ro
+      - backups:/backups
+    entrypoint: ['sh', '/backup.sh']
+
+volumes:
+  pgdata_prod:
+  backups:
+  letsencrypt:
+  certbot_www:

@@ -1,0 +1,19 @@
+# Dev image cho NestJS API — hot reload qua volume mount.
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Cần thiết cho Prisma trên alpine.
+RUN apk add --no-cache openssl
+
+# Cài deps ở cấp workspace root để hoisting hoạt động.
+COPY package.json package-lock.json* ./
+COPY packages/shared/package.json packages/shared/
+COPY apps/api/package.json apps/api/
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+CMD ["npm", "run", "dev", "--workspace", "apps/api"]

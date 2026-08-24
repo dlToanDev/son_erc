@@ -1,0 +1,298 @@
+// DebtFlow — Prisma schema (Phase 1)
+// Tiền: Decimal(18,2) · Số lượng: Decimal(14,3) (hỗ trợ 12.5 kg)
+// Payable status KHÔNG lưu cứng — tính runtime theo payments/dueDate.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum OrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ReceiptStatus {
+  DRAFT
+  CONFIRMED
+}
+
+// Payment & InventoryIssue: soft-void (không xoá cứng).
+enum RecordStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum PaymentDirection {
+  PAYABLE
+  RECEIVABLE
+}
+
+// ---------- Models ----------
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  passwordHash String       @map("password_hash")
+  role         UserRole     @default(STAFF)
+  status       EntityStatus @default(ACTIVE)
+  lastLoginAt  DateTime?    @map("last_login_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  permissions StaffPermission[]
+
+  @@map("users")
+}
+
+model StaffPermission {
+  id      String  @id @default(cuid())
+  userId  String  @map("user_id")
+  module  String
+  action  String
+  allowed Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module, action])
+  @@map("staff_permissions")
+}
+
+model Facility {
+  id      String       @id @default(cuid())
+  code    String       @unique
+  name    String
+  address String?
+  status  EntityStatus @default(ACTIVE)
+
+  orders   PurchaseOrder[]
+  receipts PurchaseReceipt[]
+  issues   InventoryIssue[]
+
+  @@map("facilities")
+}
+
+model Supplier {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  name          String
+  phone         String?
+  email         String?
+  taxCode       String?      @map("tax_code")
+  contactPerson String?      @map("contact_person")
+  address       String?
+  bankName      String?      @map("bank_name")
+  bankAccountNo String?      @map("bank_account_no")
+  bankAccountName String?    @map("bank_account_name")
+  qrCodeUrl     String?      @map("qr_code_url")
+  note          String?
+  status        EntityStatus @default(ACTIVE)
+
+  products SupplierProduct[]
+  orders   PurchaseOrder[]
+  receipts PurchaseReceipt[]
+  payables Payable[]
+
+  @@map("suppliers")
+}
+
+model SupplierProduct {
+  id         String       @id @default(cuid())
+  supplierId String       @map("supplier_id")
+  name       String
+  unit       String
+  price      Decimal      @default(0) @db.Decimal(18, 2)
+  status     EntityStatus @default(ACTIVE)
+  note       String?
+
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  @@map("supplier_products")
+}
+
+model PurchaseOrder {
+  id              String      @id @default(cuid())
+  orderCode       String      @unique @map("order_code")
+  supplierId      String      @map("supplier_id")
+  facilityId      String      @map("facility_id")
+  status          OrderStatus @default(PENDING)
+  note            String?
+  expectedDate    DateTime?   @map("expected_date")
+  createdBy       String      @map("created_by")
+  reviewedBy      String?     @map("reviewed_by")
+  reviewedAt      DateTime?   @map("reviewed_at")
+  rejectReason    String?     @map("reject_reason")
+  resultReceiptId String?     @map("result_receipt_id")
+  resultPayableId String?     @map("result_payable_id")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  supplier Supplier    @relation(fields: [supplierId], references: [id])
+  facility Facility    @relation(fields: [facilityId], references: [id])
+  items    OrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String  @map("order_id")
+  productId String? @map("product_id")
+  name      String
+  unit      String
+  unitPrice Decimal @default(0) @map("unit_price") @db.Decimal(18, 2)
+  quantity  Decimal @default(0) @db.Decimal(14, 3)
+
+  order PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model PurchaseReceipt {
+  id                  String        @id @default(cuid())
+  receiptCode         String        @unique @map("receipt_code")
+  supplierId          String        @map("supplier_id")
+  facilityId          String        @map("facility_id")
+  supplierInvoiceCode String?       @map("supplier_invoice_code")
+  receiptDate         DateTime      @map("receipt_date")
+  dueDate             DateTime?     @map("due_date")
+  status              ReceiptStatus @default(DRAFT)
+  discountAmount      Decimal       @default(0) @map("discount_amount") @db.Decimal(18, 2)
+  taxAmount           Decimal       @default(0) @map("tax_amount") @db.Decimal(18, 2)
+  note                String?
+  createdBy           String        @map("created_by")
+  confirmedBy         String?       @map("confirmed_by")
+  createdAt           DateTime      @default(now()) @map("created_at")
+
+  supplier Supplier      @relation(fields: [supplierId], references: [id])
+  facility Facility      @relation(fields: [facilityId], references: [id])
+  items    ReceiptItem[]
+  payable  Payable?
+
+  @@map("purchase_receipts")
+}
+
+model ReceiptItem {
+  id        String  @id @default(cuid())
+  receiptId String  @map("receipt_id")
+  itemName  String  @map("item_name")
+  unit      String
+  quantity  Decimal @default(0) @db.Decimal(14, 3)
+  unitPrice Decimal @default(0) @map("unit_price") @db.Decimal(18, 2)
+  note      String?
+
+  receipt PurchaseReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@map("receipt_items")
+}
+
+model Payable {
+  id                String    @id @default(cuid())
+  invoiceCode       String    @unique @map("invoice_code")
+  supplierId        String    @map("supplier_id")
+  purchaseReceiptId String?   @unique @map("purchase_receipt_id")
+  invoiceDate       DateTime  @map("invoice_date")
+  dueDate           DateTime? @map("due_date")
+  totalAmount       Decimal   @default(0) @map("total_amount") @db.Decimal(18, 2)
+  description       String?
+  note              String?
+  createdBy         String    @map("created_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  supplier Supplier         @relation(fields: [supplierId], references: [id])
+  receipt  PurchaseReceipt? @relation(fields: [purchaseReceiptId], references: [id])
+  payments Payment[]
+
+  @@map("payables")
+}
+
+model Payment {
+  id              String           @id @default(cuid())
+  direction       PaymentDirection @default(PAYABLE)
+  payableId       String           @map("payable_id")
+  amount          Decimal          @default(0) @db.Decimal(18, 2)
+  paymentDate     DateTime         @map("payment_date")
+  paymentMethod   String?          @map("payment_method")
+  transactionCode String?          @map("transaction_code")
+  proofUrl        String?          @map("proof_url")
+  note            String?
+  status          RecordStatus     @default(ACTIVE)
+  createdBy       String           @map("created_by")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  cancelledBy     String?          @map("cancelled_by")
+  cancelledAt     DateTime?        @map("cancelled_at")
+
+  payable Payable @relation(fields: [payableId], references: [id])
+
+  @@map("payments")
+}
+
+model InventoryIssue {
+  id          String       @id @default(cuid())
+  issueCode   String       @unique @map("issue_code")
+  facilityId  String       @map("facility_id")
+  issueDate   DateTime     @map("issue_date")
+  note        String?
+  status      RecordStatus @default(ACTIVE)
+  createdBy   String       @map("created_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  cancelledBy String?      @map("cancelled_by")
+  cancelledAt DateTime?    @map("cancelled_at")
+
+  facility Facility    @relation(fields: [facilityId], references: [id])
+  items    IssueItem[]
+
+  @@map("inventory_issues")
+}
+
+model IssueItem {
+  id       String  @id @default(cuid())
+  issueId  String  @map("issue_id")
+  itemName String  @map("item_name")
+  unit     String
+  quantity Decimal @default(0) @db.Decimal(14, 3)
+
+  issue InventoryIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@map("issue_items")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  time       DateTime @default(now())
+  userId     String?  @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  detail     String?
+
+  @@map("audit_logs")
+}
+
+// Singleton — chỉ 1 dòng (id = 1).
+model Settings {
+  id                  Int    @id @default(1)
+  warningDays         Int    @default(7) @map("warning_days")
+  criticalWarningDays Int    @default(3) @map("critical_warning_days")
+  currency            String @default("VND")
+  timezone            String @default("Asia/Ho_Chi_Minh")
+
+  @@map("settings")
+}
