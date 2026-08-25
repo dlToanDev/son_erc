@@ -124,7 +124,7 @@ async function main() {
 
   const facilities = [fac1, fac2, fac3];
 
-  // ---- Danh mục Nhà cung cấp & Mặt hàng (9 NCC — giá danh mục = 0, nhập sau) ----
+  // ---- Danh mục Nhà cung cấp & Mặt hàng (9 NCC — giá danh mục gán sẵn giá tạm) ----
 
   // NCC004 — Homefood: danh mục mặt hàng (giá sẽ cập nhật sau).
   const sup4 = await prisma.supplier.create({
@@ -347,7 +347,8 @@ async function main() {
 
   const suppliers = [sup4, sup5, sup6, sup7, sup8, sup9, sup10, sup11, sup12];
 
-  // Bảng giá TẠM cho dữ liệu demo (danh mục sản phẩm vẫn giữ price = 0 để nhập sau).
+  // Bảng giá tạm theo đơn vị — GÁN LUÔN vào danh mục sản phẩm để đơn hàng mới
+  // cũng tự lấy đúng giá, số liệu nhất quán với giao dịch demo.
   const UNIT_BASE_PRICE: Record<string, number> = {
     kg: 60000, túi: 25000, hộp: 40000, khay: 35000, can: 90000,
     chai: 30000, lon: 15000, cái: 20000, dây: 50000, bao: 280000, bịch: 30000,
@@ -361,6 +362,12 @@ async function main() {
       const variance = 0.85 + ((priceSeed * 37) % 31) / 100; // 0.85 .. 1.15
       demoPriceById.set(p.id, Math.round((base * variance) / 1000) * 1000);
     }
+  }
+
+  // Ghi giá tạm vào DANH MỤC sản phẩm (SupplierProduct.price) — không còn để 0,
+  // để đơn hàng tạo mới snapshot đúng giá.
+  for (const [productId, price] of demoPriceById) {
+    await prisma.supplierProduct.update({ where: { id: productId }, data: { price } });
   }
 
   for (const mCfg of monthConfigs) {
