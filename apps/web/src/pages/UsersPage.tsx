@@ -410,7 +410,7 @@ export default function UsersPage() {
                         }}
                       >
                         {/* Checkbox tích tất cả của dòng */}
-                        <td style={{ textAlign: 'center', background: someRowChecked ? '#f0fdf4' : 'transparent' }}>
+                        <td data-label="Tất cả" style={{ textAlign: 'center', background: someRowChecked ? '#f0fdf4' : 'transparent' }}>
                           <input
                             type="checkbox"
                             checked={allRowChecked}
@@ -421,7 +421,7 @@ export default function UsersPage() {
                         </td>
 
                         {/* Tên Module & Mô tả */}
-                        <td>
+                        <td data-label="Chức năng">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
                             <span style={{ fontSize: '1.2rem' }}>{cfg.icon}</span>
                             <div>
@@ -434,7 +434,7 @@ export default function UsersPage() {
                         </td>
 
                         {/* Các Quyền hạn chi tiết */}
-                        <td>
+                        <td data-label="Quyền hạn">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                             {actions.map((action) => {
                               const key = permKey(module, action);

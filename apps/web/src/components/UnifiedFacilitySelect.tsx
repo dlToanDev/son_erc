@@ -91,28 +91,29 @@ export default function UnifiedFacilitySelect({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '0.45rem',
-          padding: '0.45rem 0.85rem',
+          gap: '0.5rem',
+          padding: '0.6rem 1rem',
           background: '#fff',
           border: '1px solid #cbd5e1',
-          borderRadius: '8px',
-          fontSize: '0.88rem',
-          fontWeight: 600,
-          color: '#1e293b',
+          borderRadius: '12px',
+          fontSize: '0.92rem',
+          fontWeight: 700,
+          color: '#0f172a',
           cursor: 'pointer',
-          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
           width: '100%',
+          minHeight: '46px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {isFetching > 0 ? (
-            <Loader2 size={15} className="animate-spin" style={{ color: 'var(--df-primary)' }} />
+            <Loader2 size={16} className="animate-spin" style={{ color: 'var(--df-primary)' }} />
           ) : (
-            <Building2 size={15} style={{ color: 'var(--df-primary)' }} />
+            <Building2 size={16} style={{ color: 'var(--df-primary)' }} />
           )}
           <span>{labelText}</span>
         </div>
-        <ChevronDown size={14} style={{ color: '#64748b', transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none' }} />
+        <ChevronDown size={16} style={{ color: '#64748b', transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none' }} />
       </button>
 
       {open && (

@@ -66,33 +66,48 @@ export default function UnifiedDateFilter({ from, to, onChange }: UnifiedDateFil
   };
 
   return (
-    <div className="unified-date-filter" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-      <div className="udf-preset" style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: '0.2rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-        <Calendar size={15} style={{ margin: '0 0.4rem', color: '#64748b' }} />
-        <select
-          value={activePreset}
-          onChange={(e) => handlePresetChange(e.target.value as DatePreset)}
-          style={{
-            border: 'none',
-            background: 'transparent',
-            fontSize: '0.88rem',
-            fontWeight: 600,
-            color: '#1e293b',
-            padding: '0.25rem 0.4rem',
-            outline: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <option value="today">Hôm nay (1 ngày)</option>
-          <option value="week">Tuần này</option>
-          <option value="month">Tháng này</option>
-          <option value="quarter">Quý này</option>
-          <option value="year">Năm nay</option>
-          <option value="custom">📅 Tùy chọn ngày</option>
-        </select>
+    <div className="unified-date-filter" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+      <div
+        className="udf-preset"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: '#f8fafc',
+          padding: '0.55rem 0.9rem',
+          borderRadius: '12px',
+          border: '1px solid #cbd5e1',
+          minHeight: '46px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+          <Calendar size={18} style={{ color: 'var(--df-primary)', flexShrink: 0 }} />
+          <select
+            value={activePreset}
+            onChange={(e) => handlePresetChange(e.target.value as DatePreset)}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              fontSize: '0.92rem',
+              fontWeight: 700,
+              color: '#0f172a',
+              outline: 'none',
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <option value="today">Hôm nay (1 ngày)</option>
+            <option value="week">Tuần này</option>
+            <option value="month">Tháng này</option>
+            <option value="quarter">Quý này</option>
+            <option value="year">Năm nay</option>
+            <option value="custom">📅 Tùy chọn ngày</option>
+          </select>
+        </div>
       </div>
 
-      <div className="udf-range" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+      <div className="udf-range" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <input
           type="date"
           value={from}
@@ -101,16 +116,20 @@ export default function UnifiedDateFilter({ from, to, onChange }: UnifiedDateFil
             onChange(e.target.value, to);
           }}
           style={{
-            padding: '0.35rem 0.6rem',
-            borderRadius: '8px',
+            padding: '0.55rem 0.85rem',
+            borderRadius: '12px',
             border: '1px solid #cbd5e1',
-            fontSize: '0.88rem',
-            fontWeight: 600,
+            fontSize: '0.92rem',
+            fontWeight: 700,
             color: '#0f172a',
             background: '#fff',
+            flex: '1 1 0',
+            minHeight: '44px',
+            textAlign: 'center',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
           }}
         />
-        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>đến</span>
+        <span style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600, flexShrink: 0 }}>đến</span>
         <input
           type="date"
           value={to}
@@ -119,13 +138,17 @@ export default function UnifiedDateFilter({ from, to, onChange }: UnifiedDateFil
             onChange(from, e.target.value);
           }}
           style={{
-            padding: '0.35rem 0.6rem',
-            borderRadius: '8px',
+            padding: '0.55rem 0.85rem',
+            borderRadius: '12px',
             border: '1px solid #cbd5e1',
-            fontSize: '0.88rem',
-            fontWeight: 600,
+            fontSize: '0.92rem',
+            fontWeight: 700,
             color: '#0f172a',
             background: '#fff',
+            flex: '1 1 0',
+            minHeight: '44px',
+            textAlign: 'center',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
           }}
         />
       </div>

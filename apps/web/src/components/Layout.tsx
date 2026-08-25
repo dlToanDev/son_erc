@@ -102,7 +102,7 @@ export default function Layout() {
           <img
             src="/logo.jpeg"
             alt="Garden Chay Logo"
-            style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #4ade80' }}
+            style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
           />
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
             <span style={{ fontSize: '1rem', fontWeight: 900, color: '#4ade80' }}>Garden Chay</span>
@@ -129,12 +129,11 @@ export default function Layout() {
               src="/logo.jpeg"
               alt="Garden Chay Logo"
               style={{
-                width: '48px',
-                height: '48px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
-                objectFit: 'cover',
-                border: '2.5px solid #4ade80',
-                boxShadow: '0 0 12px rgba(74, 222, 128, 0.45)',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 4px 10px rgba(74, 222, 128, 0.4))',
               }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25 }}>

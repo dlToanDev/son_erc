@@ -146,12 +146,12 @@ export default function ReceiptDetailPage() {
           <tbody>
             {receipt.items.map((item, idx) => (
               <tr key={item.id}>
-                <td style={{ textAlign: 'left', color: '#64748b', width: '50px' }}>{idx + 1}</td>
-                <td style={{ fontWeight: 600 }}>{item.itemName}</td>
-                <td style={{ textAlign: 'center' }}>{item.unit}</td>
-                <td style={{ textAlign: 'right', fontWeight: 600 }}>{item.quantity}</td>
-                <td style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
-                <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
+                <td data-label="STT" style={{ textAlign: 'left', color: '#64748b', width: '50px' }}>{idx + 1}</td>
+                <td data-label="Tên mặt hàng" style={{ fontWeight: 600 }}>{item.itemName}</td>
+                <td data-label="ĐVT" style={{ textAlign: 'center' }}>{item.unit}</td>
+                <td data-label="Số lượng" style={{ textAlign: 'right', fontWeight: 600 }}>{item.quantity}</td>
+                <td data-label="Đơn giá" style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
+                <td data-label="Thành tiền" style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
                   {formatMoney(item.quantity * item.unitPrice)}
                 </td>
               </tr>

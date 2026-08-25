@@ -355,26 +355,50 @@ export default function OrdersPage() {
 
           {/* Danh sách mặt hàng đặt */}
           <div style={{ background: '#fff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.85rem' }}>
+              <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
                 2. Danh sách mặt hàng ({lines.length})
               </h4>
               {!form.supplierId && (
-                <span style={{ fontSize: '0.8rem', color: '#dc2626', fontWeight: 500 }}>
+                <div style={{ fontSize: '0.82rem', color: '#dc2626', fontWeight: 600, background: '#fef2f2', padding: '0.4rem 0.65rem', borderRadius: '8px', border: '1px solid #fecaca' }}>
                   ⚠️ Vui lòng chọn Nhà cung cấp trước khi chọn mặt hàng
-                </span>
+                </div>
               )}
             </div>
 
             {/* Các dòng hàng */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {lines.map((line, i) => (
-                <div key={i} className="order-create-row">
+                <div
+                  key={i}
+                  style={{
+                    background: '#f8fafc',
+                    padding: '0.85rem',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
+                    Sản phẩm #{i + 1}
+                  </div>
                   <select
                     value={line.productId}
                     onChange={(e) => setLine(i, { productId: e.target.value })}
                     disabled={!form.supplierId}
-                    style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                    style={{
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.92rem',
+                      fontWeight: 700,
+                      color: '#0f172a',
+                      background: '#fff',
+                      width: '100%',
+                      minHeight: '44px',
+                    }}
                   >
                     <option value="">— Chọn sản phẩm / mặt hàng —</option>
                     {activeProducts.map((p) => (
@@ -384,33 +408,49 @@ export default function OrdersPage() {
                     ))}
                   </select>
 
-                  <input
-                    type="number"
-                    min="0.001"
-                    step="any"
-                    placeholder="Số lượng đặt"
-                    value={line.quantity}
-                    onChange={(e) => setLine(i, { quantity: e.target.value })}
-                    disabled={!form.supplierId}
-                    style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
-                  />
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="number"
+                      min="0.001"
+                      step="any"
+                      placeholder="Nhập số lượng đặt..."
+                      value={line.quantity}
+                      onChange={(e) => setLine(i, { quantity: e.target.value })}
+                      disabled={!form.supplierId}
+                      style={{
+                        padding: '0.55rem 0.75rem',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        color: '#0f172a',
+                        background: '#fff',
+                        flex: '1 1 0',
+                        minHeight: '44px',
+                      }}
+                    />
 
-                  <button
-                    type="button"
-                    onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))}
-                    disabled={lines.length === 1}
-                    style={{
-                      border: 'none',
-                      background: 'transparent',
-                      color: lines.length === 1 ? '#cbd5e1' : '#dc2626',
-                      padding: '0.35rem',
-                      cursor: lines.length === 1 ? 'not-allowed' : 'pointer',
-                      borderRadius: '4px',
-                    }}
-                    title="Xóa dòng này"
-                  >
-                    <Trash2 size={17} />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))}
+                      disabled={lines.length === 1}
+                      style={{
+                        border: '1px solid #fecaca',
+                        background: lines.length === 1 ? '#f1f5f9' : '#fef2f2',
+                        color: lines.length === 1 ? '#cbd5e1' : '#dc2626',
+                        padding: '0 0.85rem',
+                        minHeight: '44px',
+                        cursor: lines.length === 1 ? 'not-allowed' : 'pointer',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      title="Xóa dòng này"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -511,11 +551,11 @@ export default function OrdersPage() {
                   <tbody>
                     {orderToApprove.items.map((item) => (
                       <tr key={item.id}>
-                        <td>{item.name}</td>
-                        <td style={{ textAlign: 'center' }}>{item.unit}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
-                        <td style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
-                        <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                        <td data-label="Tên mặt hàng">{item.name}</td>
+                        <td data-label="ĐVT" style={{ textAlign: 'center' }}>{item.unit}</td>
+                        <td data-label="Số lượng" style={{ textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
+                        <td data-label="Đơn giá" style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
+                        <td data-label="Thành tiền" style={{ textAlign: 'right', fontWeight: 600 }}>
                           {formatMoney(item.quantity * item.unitPrice)}
                         </td>
                       </tr>

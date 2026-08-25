@@ -104,10 +104,10 @@ export default function StatsPage() {
             )}
             {data?.rows.map((r) => (
               <tr key={`${r.itemName}|${r.unit}`}>
-                <td><strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{r.itemName}</strong></td>
-                <td style={{ textAlign: 'center' }}>{r.unit}</td>
-                <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.05rem', color: '#15803d' }}>{r.quantity}</td>
-                <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.05rem', color: '#1e40af' }}>{formatMoney(r.cost)}</td>
+                <td data-label="Mặt hàng"><strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{r.itemName}</strong></td>
+                <td data-label="ĐVT" style={{ textAlign: 'center' }}>{r.unit}</td>
+                <td data-label="Sản lượng nhập" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.05rem', color: '#15803d' }}>{r.quantity}</td>
+                <td data-label="Tổng chi phí nhập" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.05rem', color: '#1e40af' }}>{formatMoney(r.cost)}</td>
               </tr>
             ))}
             {data && data.rows.length > 0 && (

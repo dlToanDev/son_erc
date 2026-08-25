@@ -24,9 +24,16 @@ export interface IssueData {
 
 /** 1 dòng báo cáo NXT: Tồn cuối = Tồn đầu + Nhập − Xuất. */
 export interface InventoryReportRow {
+  openingVal: number;
+  receivedVal: number;
+  issuedVal: number;
+  closingVal: number;
+  avgPrice: number;
   key: string;
   itemName: string;
   unit: string;
+  /** Tên nhà cung cấp của mặt hàng (gộp nếu nhiều NCC). */
+  supplierName?: string;
   openingQty: number;
   receivedQty: number;
   issuedQty: number;
@@ -35,7 +42,7 @@ export interface InventoryReportRow {
 
 export interface InventoryReportResult {
   rows: InventoryReportRow[];
-  totals: Omit<InventoryReportRow, 'key' | 'itemName' | 'unit'>;
+  totals: Omit<InventoryReportRow, 'key' | 'itemName' | 'unit' | 'avgPrice'>;
 }
 
 export interface ShortageInfo {

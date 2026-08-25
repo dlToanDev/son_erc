@@ -172,13 +172,13 @@ export default function PayableDetailPage() {
             )}
             {payable.payments.map((pm) => (
               <tr key={pm.id} className="clickable" onClick={() => setSelectedPaymentDetail(pm as any)}>
-                <td>{formatDateTime(pm.paymentDate)}</td>
-                <td style={{ textAlign: 'right', fontWeight: 700, color: pm.status === 'ACTIVE' ? '#16a34a' : '#94a3b8' }}>
+                <td data-label="Ngày thanh toán">{formatDateTime(pm.paymentDate)}</td>
+                <td data-label="Số tiền" style={{ textAlign: 'right', fontWeight: 700, color: pm.status === 'ACTIVE' ? '#16a34a' : '#94a3b8' }}>
                   {formatMoney(pm.amount)}
                 </td>
-                <td>{pm.paymentMethod ?? '—'}</td>
-                <td>{pm.transactionCode ?? '—'}</td>
-                <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                <td data-label="Phương thức">{pm.paymentMethod ?? '—'}</td>
+                <td data-label="Mã GD">{pm.transactionCode ?? '—'}</td>
+                <td data-label="Minh chứng" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                   {pm.proofUrl ? (
                     <button
                       type="button"
@@ -193,14 +193,14 @@ export default function PayableDetailPage() {
                     '—'
                   )}
                 </td>
-                <td style={{ textAlign: 'center' }}>
+                <td data-label="Trạng thái" style={{ textAlign: 'center' }}>
                   {pm.status === 'ACTIVE' ? (
                     <span className="badge badge-success">Hiệu lực</span>
                   ) : (
                     <span className="badge badge-muted">Đã huỷ</span>
                   )}
                 </td>
-                <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                <td data-label="Thao tác" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                   <div className="btn-action-group">
                     <button
                       type="button"

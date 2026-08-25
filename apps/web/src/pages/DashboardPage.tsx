@@ -368,23 +368,23 @@ export default function DashboardPage() {
 
                       return (
                         <tr key={`${item.itemName}|${item.unit}`}>
-                          <td>
+                          <td data-label="Tên mặt hàng">
                             <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{item.itemName}</strong>{' '}
                             <span style={{ fontSize: '0.8rem', color: '#64748b' }}>({item.unit})</span>
                           </td>
-                          <td style={{ textAlign: 'right', color: '#64748b' }}>
+                          <td data-label="Kỳ trước nhập" style={{ textAlign: 'right', color: '#64748b' }}>
                             <div>{item.quantityA} {item.unit}</div>
                             <div style={{ fontSize: '0.78rem' }}>{formatMoney(item.costA)}</div>
                           </td>
-                          <td style={{ textAlign: 'right', color: '#dc2626', fontWeight: 700 }}>
+                          <td data-label="Kỳ này nhập" style={{ textAlign: 'right', color: '#dc2626', fontWeight: 700 }}>
                             <div style={{ fontSize: '1rem' }}>{item.quantityB} {item.unit}</div>
                             <div style={{ fontSize: '0.8rem' }}>{formatMoney(item.costB)}</div>
                           </td>
-                          <td style={{ textAlign: 'right', color: '#991b1b', fontWeight: 800 }}>
+                          <td data-label="Tăng vượt" style={{ textAlign: 'right', color: '#991b1b', fontWeight: 800 }}>
                             <div>+{qtyDiff} {item.unit}</div>
                             <div style={{ fontSize: '0.8rem', color: '#dc2626' }}>+{formatMoney(costDiff)}</div>
                           </td>
-                          <td style={{ textAlign: 'center' }}>
+                          <td data-label="Tỷ lệ vượt %" style={{ textAlign: 'center' }}>
                             <span
                               style={{
                                 display: 'inline-block',
@@ -445,12 +445,12 @@ export default function DashboardPage() {
                   )}
                   {statsData.rows.map((r) => (
                     <tr key={`${r.itemName}|${r.unit}`}>
-                      <td><strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>{r.itemName}</strong></td>
-                      <td style={{ textAlign: 'center' }}>{r.unit}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.02rem', color: '#15803d' }}>
+                      <td data-label="Mặt hàng"><strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>{r.itemName}</strong></td>
+                      <td data-label="ĐVT" style={{ textAlign: 'center' }}>{r.unit}</td>
+                      <td data-label="Sản lượng nhập" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.02rem', color: '#15803d' }}>
                         {r.quantity} {r.unit}
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.02rem', color: '#1d4ed8' }}>
+                      <td data-label="Tổng tiền chi trả" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.02rem', color: '#1d4ed8' }}>
                         {formatMoney(r.cost)}
                       </td>
                     </tr>

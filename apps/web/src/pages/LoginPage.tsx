@@ -36,12 +36,11 @@ export default function LoginPage() {
             src="/logo.jpeg"
             alt="Garden Chay Logo"
             style={{
-              width: '110px',
-              height: '110px',
+              width: '100px',
+              height: '100px',
               borderRadius: '50%',
-              objectFit: 'cover',
-              border: '3.5px solid #16a34a',
-              boxShadow: '0 6px 18px rgba(22, 163, 74, 0.35)',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 6px 16px rgba(22, 163, 74, 0.4))',
             }}
           />
           <h1 style={{ margin: 0, fontSize: '2rem', color: '#15803d', fontWeight: 900, textAlign: 'center', letterSpacing: '-0.02em' }}>

@@ -1,4 +1,4 @@
-// DebtFlow / Garden Chay — Seed dữ liệu mẫu chuẩn từ 01/05/2026 đến 23/08/2026.
+// DebtFlow / Garden Chay — Seed dữ liệu mẫu chuẩn từ 01/05/2026 đến 25/08/2026.
 // Cấu hình: 1 Admin + 3 Nhân viên (Staff 1, Staff 2, Staff 3) + 3 Cơ sở (CS1, CS2, CS3).
 
 import { PrismaClient, UserRole, EntityStatus } from '@prisma/client';
@@ -124,70 +124,217 @@ async function main() {
 
   const facilities = [fac1, fac2, fac3];
 
-  // ---- Danh mục Nhà cung cấp & Mặt hàng ----
-  const sup1 = await prisma.supplier.create({
+  // ---- Danh mục Nhà cung cấp & Mặt hàng (9 NCC — giá danh mục = 0, nhập sau) ----
+
+  // NCC004 — Homefood: danh mục mặt hàng (giá sẽ cập nhật sau).
+  const sup4 = await prisma.supplier.create({
     data: {
-      code: 'NCC001',
-      name: 'Công ty Thực phẩm Chay An Phú',
-      phone: '0901002003',
-      email: 'anphu@supplier.vn',
-      taxCode: '0109988776',
-      contactPerson: 'Đỗ Thị Hạnh',
-      address: 'Long Biên, Hà Nội',
+      code: 'NCC004',
+      name: 'Homefood',
       products: {
         create: [
-          { name: 'Giò nấm chay', unit: 'Kg', price: 150000 },
-          { name: 'Bì chay truyền thống', unit: 'Bao', price: 120000 },
-          { name: 'Nấm đùi gà tươi', unit: 'Túi 1kg', price: 85000 },
-          { name: 'Đậu hũ non hữu cơ', unit: 'Khay', price: 45000 },
+          { name: 'Sốt Dầu Hào', unit: 'kg', price: 0 },
+          { name: 'Sốt Kho', unit: 'kg', price: 0 },
+          { name: 'Sốt Nấm', unit: 'kg', price: 0 },
+          { name: 'Cốt Lẩu Nấm', unit: 'Kg', price: 0 },
+          { name: 'Cốt Phở vị mộc', unit: 'Kg', price: 0 },
+          { name: 'Sốt Mè', unit: 'kg', price: 0 },
+          { name: 'Sa Tế Chay', unit: 'kg', price: 0 },
+          { name: 'BB Bí Đỏ', unit: 'khay', price: 0 },
+          { name: 'BB Rau Củ', unit: 'Khay', price: 0 },
+          { name: 'Đạm Bò Chay', unit: 'kg', price: 0 },
+          { name: 'Mọc Chay', unit: 'kg', price: 0 },
+          { name: 'Mì rau củ', unit: 'túi', price: 0 },
+          { name: 'Bate mít', unit: 'hộp', price: 0 },
+          { name: 'Chả Mít', unit: 'kg', price: 0 },
+          { name: 'Mì căn', unit: 'kg', price: 0 },
         ],
       },
     },
     include: { products: true },
   });
 
-  const sup2 = await prisma.supplier.create({
+  // NCC005 — Hương đồ khô: danh mục mặt hàng khô/gia vị/vật tư (giá cập nhật sau).
+  const sup5 = await prisma.supplier.create({
     data: {
-      code: 'NCC002',
-      name: 'Đồ uống & Nước giải khát Garden',
-      phone: '0912345678',
-      email: 'douong@supplier.vn',
-      taxCode: '0101122334',
-      contactPerson: 'Trần Văn Bình',
-      address: 'Thanh Xuân, Hà Nội',
+      code: 'NCC005',
+      name: 'Hương đồ khô',
       products: {
         create: [
-          { name: 'Bia Saigon Special', unit: 'Thùng', price: 240000 },
-          { name: 'Nước khoáng Lavie 500ml', unit: 'Thùng', price: 95000 },
-          { name: 'Nước trái cây ép lon', unit: 'Thùng', price: 210000 },
+          { name: 'Hạt Sen', unit: 'kg' },
+          { name: 'Đỗ Xanh', unit: 'kg' },
+          { name: 'Bột Thính', unit: 'túi' },
+          { name: 'Mầu Điều', unit: 'hộp' },
+          { name: 'Bột Canh I Ốt', unit: 'túi' },
+          { name: 'Muối', unit: 'túi' },
+          { name: 'Đường', unit: 'kg' },
+          { name: 'Lạc', unit: 'kg' },
+          { name: 'Vừng', unit: 'Kg' },
+          { name: 'Ớt Bột', unit: 'túi' },
+          { name: 'Tiêu Đen', unit: 'kg' },
+          { name: 'Túi Rác Đen', unit: 'kg' },
+          { name: 'Túi Nylon', unit: 'kg' },
+          { name: 'Găng Tay Nylon', unit: 'kg' },
+          { name: 'Nước Cốt Dừa', unit: 'hộp' },
+          { name: 'Sữa Đặc', unit: 'hộp' },
+          { name: 'Chai Nhựa 300ml', unit: 'chai' },
+          { name: 'Cốc Nhựa 700ml', unit: 'dây' },
+          { name: 'Trà Sâm Dứa', unit: 'túi' },
+          { name: 'Miến Khô', unit: 'túi' },
+          { name: 'Sốt Cà Chua', unit: 'can' },
+          { name: 'Tương Ớt', unit: 'can' },
+          { name: 'Tương quê tôi', unit: 'can' },
+          { name: 'Bột Béo', unit: 'túi' },
+          { name: 'Mộc Nhĩ', unit: 'kg' },
+          { name: 'Bột Năng', unit: 'túi' },
+          { name: 'Bột Chiên Xù', unit: 'túi' },
+          { name: 'Đẳng Sâm', unit: 'kg' },
+          { name: 'Kỳ Tử', unit: 'kg' },
+          { name: 'Quế', unit: 'kg' },
+          { name: 'Hoa Hồi', unit: 'kg' },
+          { name: 'Thảo Quả', unit: 'kg' },
+          { name: 'Me Thái', unit: 'hộp' },
+          { name: 'Chà Là', unit: 'hộp' },
+          { name: 'Bột Sư Tử', unit: 'hộp' },
+          { name: 'Bột Chiên Giòn', unit: 'túi' },
+          { name: 'Dấm Trắng', unit: 'can' },
+          { name: 'Táo Đỏ', unit: 'kg' },
+          { name: 'Hoài Sơn', unit: 'kg' },
+          { name: 'Giấy Ăn', unit: 'bịch' },
+          { name: 'Đũa thìa', unit: 'túi' },
+          { name: 'Xì Dầu Đặc Biệt', unit: 'chai' },
+          { name: 'Hạt Điều', unit: 'kg' },
+          { name: 'Gạo Đen', unit: 'bao' },
+          { name: 'Dầu Ăn', unit: 'can' },
+          { name: 'Gạo Hồng', unit: 'bao' },
+          { name: 'Gạo Trắng', unit: 'bao' },
+          { name: 'Nước Mắm', unit: 'chai' },
+          { name: 'túi đỏ to', unit: 'kg' },
+          { name: 'Nấm Hương', unit: 'kg' },
+          { name: 'Dầu Hào', unit: 'chai' },
+          { name: 'Váng Đậu Chiên', unit: 'túi' },
         ],
       },
     },
     include: { products: true },
   });
 
-  const sup3 = await prisma.supplier.create({
+  // NCC006 — Chợ Đồng Xuân: danh mục mặt hàng (giá cập nhật sau).
+  const sup6 = await prisma.supplier.create({
     data: {
-      code: 'NCC003',
-      name: 'Nông sản & Gia vị Thuận Phát',
-      phone: '0988776655',
-      email: 'thuanphat@supplier.vn',
-      taxCode: '0103344556',
-      contactPerson: 'Lê Hoàng Nam',
-      address: 'Hoàng Mai, Hà Nội',
+      code: 'NCC006',
+      name: 'Chợ Đồng Xuân',
       products: {
         create: [
-          { name: 'Gạo thơm ST25', unit: 'Bao 10kg', price: 280000 },
-          { name: 'Dầu ăn thực vật 5L', unit: 'Can', price: 220000 },
-          { name: 'Nước tương đậu nành', unit: 'Chai', price: 35000 },
-          { name: 'Hạt nêm nấm chay', unit: 'Gói 1kg', price: 65000 },
+          { name: 'Nấm Đông Cô', unit: 'túi' },
+          { name: 'túi đỏ nhỏ', unit: 'kg' },
+          { name: 'Rong Biển Khô nấu', unit: 'túi' },
+          { name: 'Rong Biển Cuộn', unit: 'túi' },
+          { name: 'Hạt Nêm', unit: 'túi' },
+          { name: 'Hạnh Nhân', unit: 'kg' },
+          { name: 'Nho Khô', unit: 'kg' },
+          { name: 'Bột Ngọt Gà', unit: 'túi' },
+          { name: 'Giò Chay', unit: 'cái' },
+          { name: 'Chả Quế Chay', unit: 'túi' },
+          { name: 'Chả Bao Xả', unit: 'túi' },
         ],
       },
     },
     include: { products: true },
   });
 
-  // ---- Sinh dữ liệu chi tiết từ 01/05/2026 -> 23/08/2026 ----
+  // NCC007 — Phở khô: danh mục mặt hàng (giá cập nhật sau).
+  const sup7 = await prisma.supplier.create({
+    data: {
+      code: 'NCC007',
+      name: 'Phở khô',
+      products: {
+        create: [
+          { name: 'Phở Khô', unit: 'kg' },
+          { name: 'Bánh Đa Nem', unit: 'kg' },
+          { name: 'Bún Khô', unit: 'kg' },
+        ],
+      },
+    },
+    include: { products: true },
+  });
+
+  // NCC008 — Bánh Đa Vừng Mặt Hừng: danh mục mặt hàng (giá cập nhật sau).
+  const sup8 = await prisma.supplier.create({
+    data: {
+      code: 'NCC008',
+      name: 'Bánh Đa Vừng Mặt Hừng',
+      products: {
+        create: [
+          { name: 'Bánh Đa Vừng', unit: 'kg' },
+        ],
+      },
+    },
+    include: { products: true },
+  });
+
+  // NCC009 — Vỏ Há Cảo: danh mục mặt hàng (giá cập nhật sau).
+  const sup9 = await prisma.supplier.create({
+    data: {
+      code: 'NCC009',
+      name: 'Vỏ Há Cảo',
+      products: {
+        create: [
+          { name: 'Vỏ Há Cảo', unit: 'cái' },
+        ],
+      },
+    },
+    include: { products: true },
+  });
+
+  // NCC010 — Váng Đậu Tươi: danh mục mặt hàng (giá cập nhật sau).
+  const sup10 = await prisma.supplier.create({
+    data: {
+      code: 'NCC010',
+      name: 'Váng Đậu Tươi',
+      products: {
+        create: [
+          { name: 'Váng Đậu Tươi', unit: 'túi' },
+        ],
+      },
+    },
+    include: { products: true },
+  });
+
+  // NCC011 — Nước Lavie: danh mục mặt hàng (giá cập nhật sau).
+  const sup11 = await prisma.supplier.create({
+    data: {
+      code: 'NCC011',
+      name: 'Nước Lavie',
+      products: {
+        create: [
+          { name: 'Nước Lavie', unit: 'chai' },
+          { name: 'Bia Ken', unit: 'lon' },
+          { name: 'Bia 0 Độ', unit: 'lon' },
+          { name: 'Nước Ngọt', unit: 'lon' },
+        ],
+      },
+    },
+    include: { products: true },
+  });
+
+  // NCC012 — Bát Giấy To: danh mục mặt hàng (giá cập nhật sau).
+  const sup12 = await prisma.supplier.create({
+    data: {
+      code: 'NCC012',
+      name: 'Bát Giấy To',
+      products: {
+        create: [
+          { name: 'Bát Giấy To', unit: 'hộp' },
+          { name: 'Bát Giấy Nhỡ', unit: 'hộp' },
+          { name: 'Tảo Xoắn', unit: 'kg' },
+        ],
+      },
+    },
+    include: { products: true },
+  });
+
+  // ---- Sinh dữ liệu chi tiết từ 01/05/2026 -> 25/08/2026 ----
   let receiptCounter = 100;
   let orderCounter = 100;
 
@@ -198,11 +345,27 @@ async function main() {
     { year: 2026, month: 8, label: 'Tháng 8', count: 21, multiplier: 1.8 },
   ];
 
-  const suppliers = [sup1, sup2, sup3];
+  const suppliers = [sup4, sup5, sup6, sup7, sup8, sup9, sup10, sup11, sup12];
+
+  // Bảng giá TẠM cho dữ liệu demo (danh mục sản phẩm vẫn giữ price = 0 để nhập sau).
+  const UNIT_BASE_PRICE: Record<string, number> = {
+    kg: 60000, túi: 25000, hộp: 40000, khay: 35000, can: 90000,
+    chai: 30000, lon: 15000, cái: 20000, dây: 50000, bao: 280000, bịch: 30000,
+  };
+  const demoPriceById = new Map<string, number>();
+  let priceSeed = 0;
+  for (const s of suppliers) {
+    for (const p of s.products) {
+      priceSeed += 1;
+      const base = UNIT_BASE_PRICE[p.unit.trim().toLowerCase()] ?? 30000;
+      const variance = 0.85 + ((priceSeed * 37) % 31) / 100; // 0.85 .. 1.15
+      demoPriceById.set(p.id, Math.round((base * variance) / 1000) * 1000);
+    }
+  }
 
   for (const mCfg of monthConfigs) {
-    // Tháng 8 chốt đến ngày 23/08/2026
-    const daysInMonth = mCfg.month === 8 ? 23 : 28;
+    // Tháng 8 chốt đến ngày 25/08/2026
+    const daysInMonth = mCfg.month === 8 ? 25 : 28;
 
     for (let i = 0; i < mCfg.count; i++) {
       receiptCounter++;
@@ -211,7 +374,7 @@ async function main() {
       const facIndex = i % 3;
       const fac = facilities[facIndex];
       const assignedStaff = staffList[facIndex];
-      const sup = suppliers[i % 3];
+      const sup = suppliers[i % suppliers.length];
 
       const day = Math.min(daysInMonth, Math.floor((i / mCfg.count) * daysInMonth) + 1);
       const receiptDate = new Date(Date.UTC(mCfg.year, mCfg.month - 1, day, 9, 0, 0));
@@ -221,15 +384,19 @@ async function main() {
       const oCode = `DH-2026-${String(orderCounter).padStart(3, '0')}`;
       const invCode = `HD-${mCfg.month}-${String(i + 1).padStart(3, '0')}`;
 
-      // Chọn sản phẩm & sản lượng
-      const itemsToCreate = sup.products.map((prod, idx) => {
+      // Chọn 1 nhóm mặt hàng xoay vòng của NCC (không lấy toàn bộ để phiếu gọn & thực tế)
+      const prodCount = sup.products.length;
+      const take = Math.min(6, prodCount);
+      const startIdx = prodCount > 0 ? (i * 2) % prodCount : 0;
+      const chosenProducts = Array.from({ length: take }, (_, k) => sup.products[(startIdx + k) % prodCount]);
+      const itemsToCreate = chosenProducts.map((prod, idx) => {
         const baseQty = (idx + 1) * 10 + (i % 5) * 5;
         const qty = Math.round(baseQty * mCfg.multiplier);
         return {
           itemName: prod.name,
           unit: prod.unit,
           quantity: qty,
-          unitPrice: prod.price,
+          unitPrice: demoPriceById.get(prod.id) ?? 0,
         };
       });
 
@@ -365,12 +532,12 @@ async function main() {
       userId: admin.id,
       action: 'SEED',
       entityType: 'SYSTEM',
-      detail: 'Khởi tạo thành công dữ liệu mẫu từ 01/05/2026 đến 23/08/2026 cho 1 Admin, 3 NV và 3 CS',
+      detail: 'Khởi tạo thành công dữ liệu mẫu từ 01/05/2026 đến 25/08/2026 cho 1 Admin, 3 NV và 3 CS',
     },
   });
 
   // eslint-disable-next-line no-console
-  console.log('✅ Seed dữ liệu mẫu thành công (01/05/2026 ➔ 23/08/2026):');
+  console.log('✅ Seed dữ liệu mẫu thành công (01/05/2026 ➔ 25/08/2026):');
   // eslint-disable-next-line no-console
   console.log(`  👑 1 Admin: ${admin.email} (Mật khẩu: ${adminPassword})`);
   // eslint-disable-next-line no-console

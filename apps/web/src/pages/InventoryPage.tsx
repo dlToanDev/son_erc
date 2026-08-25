@@ -1,6 +1,17 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { InventoryReportRow, IssueData, ShortageInfo } from '@debtflow/shared';
-import { Calculator, Eye, Pencil, Trash2 } from 'lucide-react';
+import {
+  BarChart3,
+  Building2,
+  Calendar,
+  Clock,
+  Eye,
+  FileText,
+  Package,
+  Pencil,
+  Trash2,
+  User,
+} from 'lucide-react';
 import Modal from '../components/Modal';
 import { checkIssue } from '../api/inventory';
 import {
@@ -91,23 +102,33 @@ export default function InventoryPage() {
 
   // ---- Kiểm kê Tồn còn lại (Tự động tính Xuất) ----
   const [quickCountOpen, setQuickCountOpen] = useState(false);
+  const [quickFacilityId, setQuickFacilityId] = useState<string>('');
   const [quickFrom, setQuickFrom] = useState(monthStart());
   const [quickTo, setQuickTo] = useState(today());
   const [quickCounts, setQuickCounts] = useState<Record<string, string>>({});
   const [quickNote, setQuickNote] = useState('');
   const [quickSubmitting, setQuickSubmitting] = useState(false);
 
-  const { data: quickReport } = useInventoryReport(quickFrom, quickTo, selectedFacility || undefined);
+  const { data: quickReport } = useInventoryReport(quickFrom, quickTo, quickFacilityId || undefined);
   const activeReport = quickCountOpen ? (quickReport ?? report) : report;
 
+  // Tự động đồng bộ số lượng tồn hệ thống khi đổi cơ sở hoặc khoảng thời gian trong modal kiểm kê
+  useEffect(() => {
+    if (quickCountOpen && activeReport?.rows) {
+      const initial: Record<string, string> = {};
+      activeReport.rows.forEach((r) => {
+        initial[r.key] = String(r.closingQty);
+      });
+      setQuickCounts(initial);
+    }
+  }, [quickCountOpen, activeReport]);
+
   const openQuickCount = () => {
+    // Mặc định chọn cơ sở đang được lọc ở thanh Header bên ngoài (nếu có 1 cơ sở), ngược lại mới là tất cả
+    const defaultFac = selectedFacilityIds.length === 1 ? selectedFacilityIds[0] : '';
+    setQuickFacilityId(defaultFac);
     setQuickFrom(from);
     setQuickTo(to);
-    const initial: Record<string, string> = {};
-    (report?.rows ?? []).forEach((r) => {
-      initial[r.key] = String(r.closingQty);
-    });
-    setQuickCounts(initial);
     setQuickNote(`Xuất kho đợt từ ngày ${from} đến ngày ${to}`);
     setQuickCountOpen(true);
   };
@@ -136,8 +157,19 @@ export default function InventoryPage() {
         return;
       }
 
+
+      
+      if (!quickFacilityId) {
+          // If no specific facility selected, error out or choose one?
+          // The API expects ONE facilityId. Wait. 
+          // If we allow "Tất cả cơ sở", we can't create an issue for "all facilities". We have to create issues for each facility, or we force the user to pick one?
+          alert('Vui lòng chọn 1 cơ sở cụ thể để tạo phiếu xuất.');
+          setQuickSubmitting(false);
+          return;
+      }
+
       await create.mutateAsync({
-        facilityId: selectedFacility,
+        facilityId: quickFacilityId,
         issueDate: quickTo,
         note: quickNote || `Xuất kho đợt từ ngày ${quickFrom} đến ngày ${quickTo}`,
         items: itemsToIssue,
@@ -236,21 +268,18 @@ export default function InventoryPage() {
             }}
           />
           {can('inventory', 'edit') && (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div className="btn-group-responsive">
               <button
                 type="button"
                 className="btn-primary"
                 onClick={openQuickCount}
                 style={{
-                  background: '#2563eb',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
+                  fontWeight: 700,
                 }}
               >
-                <Calculator size={16} />
-                <span>⚡ Nhập Tồn còn lại (Tự tính Xuất)</span>
+                Nhập Tồn còn lại (Tự tính Xuất)
               </button>
               <button
                 type="button"
@@ -277,45 +306,161 @@ export default function InventoryPage() {
       {tab === 'report' && (
         <>
           <div className="table-wrap">
-            <table className="data-table table-sticky-first">
+            <table className="data-table table-sticky-first desktop-table">
               <thead>
                 <tr>
-                  <th>Mặt hàng</th>
-                  <th>ĐVT</th>
-                  <th style={{ textAlign: 'right' }}>Tồn đầu</th>
-                  <th style={{ textAlign: 'right' }}>Nhập</th>
-                  <th style={{ textAlign: 'right' }}>Xuất</th>
-                  <th style={{ textAlign: 'right' }}>Tồn cuối</th>
+                  <th rowSpan={2}>Mặt hàng</th>
+                  <th rowSpan={2} style={{ textAlign: 'center' }}>ĐVT</th>
+                  <th rowSpan={2} style={{ textAlign: 'right' }}>Bảng giá</th>
+                  <th colSpan={2} style={{ textAlign: 'center' }}>Tồn đầu</th>
+                  <th colSpan={2} style={{ textAlign: 'center' }}>Nhập</th>
+                  <th colSpan={2} style={{ textAlign: 'center' }}>Xuất</th>
+                  <th colSpan={2} style={{ textAlign: 'center' }}>Tồn cuối</th>
+                </tr>
+                <tr>
+                  <th style={{ textAlign: 'right', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>SL</th>
+                  <th style={{ textAlign: 'right', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>TT</th>
+                  <th style={{ textAlign: 'right', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>SL</th>
+                  <th style={{ textAlign: 'right', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>TT</th>
+                  <th style={{ textAlign: 'right', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>SL</th>
+                  <th style={{ textAlign: 'right', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>TT</th>
+                  <th style={{ textAlign: 'right', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>SL</th>
+                  <th style={{ textAlign: 'right', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>TT</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading && !report && (
-                  <tr><td colSpan={6} className="table-empty">Đang tải…</td></tr>
+                  <tr><td colSpan={11} className="table-empty">Đang tải…</td></tr>
                 )}
                 {(!isLoading || report) && !report?.rows.length && (
-                  <tr><td colSpan={6} className="table-empty">Không có chuyển động kho trong kỳ</td></tr>
+                  <tr><td colSpan={11} className="table-empty">Không có chuyển động kho trong kỳ</td></tr>
                 )}
                 {report?.rows.map((row) => (
                   <tr key={row.key} className="clickable" onClick={() => setCardItem(row)}>
-                    <td>{row.itemName}</td>
-                    <td>{row.unit}</td>
+                    <td>
+                      <div>{row.itemName}</div>
+                      {row.supplierName && (
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500, marginTop: '1px' }}>({row.supplierName})</div>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>{row.unit}</td>
+                    <td style={{ textAlign: 'right' }}>{row.avgPrice.toLocaleString()}</td>
                     <td style={{ textAlign: 'right' }}>{row.openingQty}</td>
+                    <td style={{ textAlign: 'right' }}>{row.openingVal.toLocaleString()}</td>
                     <td style={{ textAlign: 'right' }}>{row.receivedQty}</td>
+                    <td style={{ textAlign: 'right' }}>{row.receivedVal.toLocaleString()}</td>
                     <td style={{ textAlign: 'right' }}>{row.issuedQty}</td>
+                    <td style={{ textAlign: 'right' }}>{row.issuedVal.toLocaleString()}</td>
                     <td style={{ textAlign: 'right' }}><strong>{row.closingQty}</strong></td>
+                    <td style={{ textAlign: 'right' }}><strong>{row.closingVal.toLocaleString()}</strong></td>
                   </tr>
                 ))}
                 {report && report.rows.length > 0 && (
                   <tr className="order-total-row">
-                    <td colSpan={2}>Tổng cộng</td>
+                    <td colSpan={3}>Tổng cộng</td>
                     <td style={{ textAlign: 'right' }}>{report.totals.openingQty}</td>
+                    <td style={{ textAlign: 'right' }}>{report.totals.openingVal.toLocaleString()}</td>
                     <td style={{ textAlign: 'right' }}>{report.totals.receivedQty}</td>
+                    <td style={{ textAlign: 'right' }}>{report.totals.receivedVal.toLocaleString()}</td>
                     <td style={{ textAlign: 'right' }}>{report.totals.issuedQty}</td>
+                    <td style={{ textAlign: 'right' }}>{report.totals.issuedVal.toLocaleString()}</td>
                     <td style={{ textAlign: 'right' }}>{report.totals.closingQty}</td>
+                    <td style={{ textAlign: 'right' }}>{report.totals.closingVal.toLocaleString()}</td>
                   </tr>
                 )}
               </tbody>
             </table>
+
+            {/* View dạng Card siêu mượt & đẹp mắt dành riêng cho Mobile */}
+            <div className="mobile-card-list">
+              {isLoading && !report && (
+                <div className="table-empty">Đang tải dữ liệu báo cáo kho…</div>
+              )}
+              {(!isLoading || report) && !report?.rows.length && (
+                <div className="table-empty">Không có chuyển động kho trong kỳ</div>
+              )}
+              {report?.rows.map((row) => (
+                <div key={row.key} className="mobile-card clickable" onClick={() => setCardItem(row)} style={{ padding: '0.9rem 1rem' }}>
+                  {/* Card Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', paddingBottom: '0.6rem', borderBottom: '1px solid #e2e8f0' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#0f172a', lineHeight: 1.3 }}>{row.itemName}</div>
+                      {row.supplierName && (
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500, marginTop: '1px' }}>({row.supplierName})</div>
+                      )}
+                      <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>ĐVT: <strong>{row.unit}</strong></span>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <span style={{ fontSize: '0.78rem', background: '#e0f2fe', color: '#0369a1', fontWeight: 700, padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+                        {row.avgPrice.toLocaleString()}đ / {row.unit}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 4 Stats Grid Box */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem' }}>
+                    {/* Tồn đầu */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.5rem 0.65rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Tồn đầu kỳ</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', marginTop: '1px' }}>{row.openingQty} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>{row.unit}</span></div>
+                      <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{row.openingVal.toLocaleString()}đ</div>
+                    </div>
+
+                    {/* Nhập */}
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.5rem 0.65rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 600 }}>Nhập trong kỳ</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#15803d', marginTop: '1px' }}>+{row.receivedQty} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#166534' }}>{row.unit}</span></div>
+                      <div style={{ fontSize: '0.78rem', color: '#15803d', fontWeight: 600 }}>+{row.receivedVal.toLocaleString()}đ</div>
+                    </div>
+
+                    {/* Xuất */}
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '0.5rem 0.65rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#991b1b', fontWeight: 600 }}>Xuất trong kỳ</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#dc2626', marginTop: '1px' }}>-{row.issuedQty} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#991b1b' }}>{row.unit}</span></div>
+                      <div style={{ fontSize: '0.78rem', color: '#dc2626', fontWeight: 600 }}>-{row.issuedVal.toLocaleString()}đ</div>
+                    </div>
+
+                    {/* Tồn cuối */}
+                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '0.5rem 0.65rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#1e40af', fontWeight: 600 }}>Tồn cuối kỳ</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1d4ed8', marginTop: '1px' }}>{row.closingQty} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#1e40af' }}>{row.unit}</span></div>
+                      <div style={{ fontSize: '0.78rem', color: '#1d4ed8', fontWeight: 700 }}>{row.closingVal.toLocaleString()}đ</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Thẻ tổng cộng toàn kho */}
+              {report && report.rows.length > 0 && (
+                <div style={{ background: '#1e293b', color: '#fff', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <BarChart3 size={16} color="#94a3b8" /> TỔNG CỘNG TOÀN KHO
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem' }}>
+                    <div style={{ background: 'rgba(255, 255, 255, 0.07)', padding: '0.5rem 0.65rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>Tồn đầu:</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff' }}>{report.totals.openingQty} món</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{report.totals.openingVal.toLocaleString()}đ</div>
+                    </div>
+                    <div style={{ background: 'rgba(34, 197, 94, 0.12)', padding: '0.5rem 0.65rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#86efac' }}>Tổng Nhập:</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#4ade80' }}>+{report.totals.receivedQty} món</div>
+                      <div style={{ fontSize: '0.75rem', color: '#86efac' }}>+{report.totals.receivedVal.toLocaleString()}đ</div>
+                    </div>
+                    <div style={{ background: 'rgba(239, 68, 68, 0.12)', padding: '0.5rem 0.65rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#fca5a5' }}>Tổng Xuất:</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f87171' }}>-{report.totals.issuedQty} món</div>
+                      <div style={{ fontSize: '0.75rem', color: '#fca5a5' }}>-{report.totals.issuedVal.toLocaleString()}đ</div>
+                    </div>
+                    <div style={{ background: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(96, 165, 250, 0.4)', padding: '0.5rem 0.65rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#93c5fd' }}>Tồn cuối:</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#60a5fa' }}>{report.totals.closingQty} món</div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#93c5fd' }}>{report.totals.closingVal.toLocaleString()}đ</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <p className="placeholder">Bấm vào từng dòng để xem thẻ kho.</p>
         </>
@@ -323,7 +468,7 @@ export default function InventoryPage() {
 
       {tab === 'issues' && (
         <div className="table-wrap">
-          <table className="data-table">
+          <table className="data-table desktop-table">
             <thead>
               <tr>
                 <th>Mã phiếu xuất</th>
@@ -396,6 +541,57 @@ export default function InventoryPage() {
               ))}
             </tbody>
           </table>
+
+          {/* View dạng Card dành riêng cho Mobile khi xem Danh sách phiếu xuất */}
+          <div className="mobile-card-list">
+            {!issues.length && (
+              <div className="table-empty">Chưa có phiếu xuất kho nào</div>
+            )}
+            {issues.map((issue: IssueData) => (
+              <div key={issue.id} className="mobile-card clickable" onClick={() => setSelectedIssueDetail(issue)}>
+                <div className="card-row card-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong style={{ color: 'var(--df-primary)', fontSize: '1rem' }}>{issue.issueCode}</strong>
+                  {issue.status === 'ACTIVE' ? (
+                    <span className="badge badge-success">Hiệu lực</span>
+                  ) : (
+                    <span className="badge badge-muted">Đã huỷ</span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <div><span style={{ color: '#64748b' }}>Ngày xuất:</span> <strong>{formatDateTime(issue.issueDate)}</strong></div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', marginBottom: '0.15rem' }}>Danh sách xuất:</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', paddingLeft: '0.5rem' }}>
+                      {issue.items.map((it, idx) => (
+                        <span key={idx} style={{ fontSize: '0.83rem' }}>
+                          • <strong>{it.itemName}</strong> × <strong style={{ color: '#16a34a' }}>{it.quantity}</strong> {it.unit}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {issue.note && <div><span style={{ color: '#64748b' }}>Ghi chú:</span> {issue.note}</div>}
+                </div>
+                <div className="card-actions" onClick={(e) => e.stopPropagation()}>
+                  <button type="button" className="btn-action-view" onClick={() => setSelectedIssueDetail(issue)}>
+                    <Eye size={13} />
+                    <span>Chi tiết</span>
+                  </button>
+                  {issue.status === 'ACTIVE' && can('inventory', 'edit') && (
+                    <>
+                      <button type="button" className="btn-action-edit" onClick={() => openEditIssue(issue)}>
+                        <Pencil size={13} />
+                        <span>Sửa</span>
+                      </button>
+                      <button type="button" className="btn-action-delete" onClick={() => setIssueToCancel(issue)} disabled={cancel.isPending}>
+                        <Trash2 size={13} />
+                        <span>Hủy</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -422,20 +618,20 @@ export default function InventoryPage() {
               </tr>
               {card.entries.map((e, i) => (
                 <tr key={i}>
-                  <td>{e.date}</td>
-                  <td>{e.code}</td>
-                  <td>
+                  <td data-label="Ngày">{e.date}</td>
+                  <td data-label="Chứng từ">{e.code}</td>
+                  <td data-label="Loại">
                     {e.type === 'NHAP' ? (
                       <span className="badge badge-success">Nhập</span>
                     ) : (
                       <span className="badge badge-warning">Xuất</span>
                     )}
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td data-label="SL" style={{ textAlign: 'right' }}>
                     {e.type === 'NHAP' ? '+' : '−'}
                     {e.quantity}
                   </td>
-                  <td style={{ textAlign: 'right' }}>{e.balance}</td>
+                  <td data-label="Tồn" style={{ textAlign: 'right' }}>{e.balance}</td>
                 </tr>
               ))}
               <tr className="order-total-row">
@@ -450,32 +646,54 @@ export default function InventoryPage() {
 
       {/* Lập phiếu xuất */}
       <Modal title="Lập phiếu xuất kho" open={issueOpen} onClose={() => setIssueOpen(false)}>
-        <form className="form-grid" onSubmit={onSubmitIssue}>
-          <label>
-            Ngày xuất *
-            <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} required />
-          </label>
-          <label>
-            Ghi chú
-            <input value={issueNote} onChange={(e) => setIssueNote(e.target.value)} />
-          </label>
+        <form onSubmit={onSubmitIssue} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          <div className="modal-filter-box">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b' }}>
+                Ngày xuất kho *
+              </span>
+              <input
+                type="date"
+                value={issueDate}
+                onChange={(e) => setIssueDate(e.target.value)}
+                required
+                style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.92rem', color: '#0f172a', width: '100%' }}
+              />
+            </div>
 
-          <div className="span-2">
-            <strong>Mặt hàng xuất</strong> (tồn khả dụng trong kỳ đang xem)
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b' }}>
+                Ghi chú xuất kho
+              </span>
+              <input
+                type="text"
+                value={issueNote}
+                onChange={(e) => setIssueNote(e.target.value)}
+                placeholder="Nhập ghi chú (nếu có)..."
+                style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.92rem', color: '#0f172a', width: '100%' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '1rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>
+              DANH SÁCH MẶT HÀNG XUẤT KHO:
+            </span>
             {lines.map((line, i) => {
               const row = availableRows.find(
                 (r) => r.itemName === line.itemName && r.unit === line.unit,
               );
               return (
-                <div key={i} className="order-line">
+                <div key={i} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', background: '#ffffff', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                   <select
                     value={row?.key ?? ''}
                     onChange={(e) => pickItem(i, e.target.value)}
+                    style={{ flex: '2 1 180px', minHeight: '40px', padding: '0.4rem 0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 600 }}
                   >
                     <option value="">— Chọn mặt hàng —</option>
                     {availableRows.map((r) => (
                       <option key={r.key} value={r.key}>
-                        {r.itemName} ({r.unit}) — tồn {r.closingQty}
+                        {r.itemName} ({r.unit}) — Tồn: {r.closingQty}
                       </option>
                     ))}
                   </select>
@@ -483,25 +701,17 @@ export default function InventoryPage() {
                     type="number"
                     min="0.001"
                     step="any"
-                    placeholder="SL"
+                    placeholder="Số lượng"
                     value={line.quantity}
                     onChange={(e) => setLine(i, { quantity: e.target.value })}
+                    style={{ flex: '1 1 100px', minHeight: '40px', padding: '0.4rem 0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 700, textAlign: 'center' }}
                   />
-                  <span className="order-line-price">{row ? `tồn ${row.closingQty}` : '—'}</span>
-                  <span
-                    className={
-                      row && Number(line.quantity) > row.closingQty
-                        ? 'order-line-total text-danger'
-                        : 'order-line-total'
-                    }
-                  >
-                    {row && Number(line.quantity) > row.closingQty ? 'VƯỢT TỒN' : ''}
-                  </span>
                   <button
                     type="button"
-                    className="btn-link"
+                    className="btn-ghost"
                     onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))}
                     disabled={lines.length === 1}
+                    style={{ color: '#dc2626', border: '1px solid #fecaca', padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}
                   >
                     Xoá
                   </button>
@@ -510,15 +720,16 @@ export default function InventoryPage() {
             })}
             <button
               type="button"
-              className="btn-link"
+              className="btn-ghost"
               onClick={() => setLines((prev) => [...prev, { itemName: '', unit: '', quantity: '' }])}
+              style={{ alignSelf: 'flex-start', color: '#2563eb', fontWeight: 700 }}
             >
-              + Thêm dòng
+              + Thêm mặt hàng
             </button>
           </div>
 
           {shortages.length > 0 && (
-            <div className="form-error span-2">
+            <div className="form-error">
               Xuất vượt tồn khả dụng:
               <ul style={{ margin: '0.25rem 0 0 1rem' }}>
                 {shortages.map((s) => (
@@ -529,13 +740,19 @@ export default function InventoryPage() {
               </ul>
             </div>
           )}
-          {error && <div className="form-error span-2">{error}</div>}
-          <div className="form-actions span-2">
+          {error && <div className="form-error">{error}</div>}
+
+          <div className="form-actions">
             <button type="button" className="btn-ghost" onClick={() => setIssueOpen(false)}>
-              Huỷ
+              Huỷ bỏ
             </button>
-            <button type="submit" className="btn-primary" disabled={create.isPending}>
-              Xuất kho
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={create.isPending}
+              style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', padding: '0.55rem 1.35rem', fontWeight: 700 }}
+            >
+              {create.isPending ? 'Đang tạo phiếu xuất…' : 'Xác nhận Xuất kho'}
             </button>
           </div>
         </form>
@@ -543,68 +760,79 @@ export default function InventoryPage() {
 
       {/* Modal Kiểm Kê Tồn Thực Tế & Tự Động Tính Phiếu Xuất */}
       <Modal
-        title="⚡ Kiểm kê Tồn thực tế & Tự động tạo Phiếu xuất"
+        title="Kiểm kê Tồn thực tế & Tự động tạo Phiếu xuất"
         open={quickCountOpen}
         onClose={() => setQuickCountOpen(false)}
         size="xl"
       >
         <form onSubmit={handleQuickCountSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '0.85rem 1.1rem', borderRadius: '10px', fontSize: '0.88rem', color: '#1e40af', lineHeight: 1.5 }}>
-            💡 <strong>Hướng dẫn:</strong> Thay vì viết phiếu xuất từng dòng, bạn chỉ cần <strong>nhập số lượng còn lại thực tế</strong> của từng mặt hàng tại cửa hàng/cơ sở đang chọn (<em>{activeFacilities.find((f) => f.id === selectedFacility)?.name || 'Cơ sở'}</em>).
+            <strong>Hướng dẫn:</strong> Đang xem tồn kho của <strong>{quickFacilityId ? (activeFacilities.find((f) => f.id === quickFacilityId)?.name || 'Cơ sở') : 'Tất cả cơ sở'}</strong>. Bạn chỉ cần <strong>nhập số lượng còn lại thực tế</strong> của từng mặt hàng tại cơ sở đã chọn.
             Hệ thống sẽ <strong>tự động tính toán lượng Xuất = (Tồn hệ thống - Tồn còn lại)</strong> và khởi tạo phiếu xuất kho ngay lập tức!
           </div>
 
-          {/* Chọn Khoảng thời gian Đợt xuất kho (Từ ngày ... đến ngày ...) */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '1.25rem',
-              alignItems: 'center',
-              background: '#f8fafc',
-              padding: '0.85rem 1.1rem',
-              borderRadius: '10px',
-              border: '1px solid #cbd5e1',
-            }}
-          >
+          <div className="modal-filter-box">
             <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>
-              📅 ĐỢT KIỂM KÊ & XUẤT KHO:
+              CHỌN CƠ SỞ:
+            </span>
+            <select
+              value={quickFacilityId}
+              onChange={(e) => {
+                setQuickFacilityId(e.target.value);
+              }}
+              style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #94a3b8', fontSize: '0.92rem', fontWeight: 700, color: '#1e40af', background: '#fff' }}
+            >
+              <option value="">Tất cả cơ sở</option>
+              {activeFacilities.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Chọn Khoảng thời gian Đợt xuất kho (Từ ngày ... đến ngày ...) */}
+          <div className="modal-filter-box">
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>
+              ĐỢT KIỂM KÊ & XUẤT KHO:
             </span>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <span style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 600 }}>Từ ngày:</span>
-              <input
-                type="date"
-                value={quickFrom}
-                onChange={(e) => {
-                  setQuickFrom(e.target.value);
-                  setQuickNote(`Xuất kho đợt từ ngày ${e.target.value} đến ngày ${quickTo}`);
-                }}
-                style={{ padding: '0.35rem 0.65rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.92rem', fontWeight: 700, color: '#1e40af', background: '#fff' }}
-              />
-            </div>
+            <div className="modal-filter-date-group">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <span style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 600 }}>Từ ngày:</span>
+                <input
+                  type="date"
+                  value={quickFrom}
+                  onChange={(e) => {
+                    setQuickFrom(e.target.value);
+                    setQuickNote(`Xuất kho đợt từ ngày ${e.target.value} đến ngày ${quickTo}`);
+                  }}
+                  style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #94a3b8', fontSize: '0.92rem', fontWeight: 700, color: '#1e40af', background: '#fff' }}
+                />
+              </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <span style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 600 }}>Đến ngày:</span>
-              <input
-                type="date"
-                value={quickTo}
-                onChange={(e) => {
-                  setQuickTo(e.target.value);
-                  setQuickNote(`Xuất kho đợt từ ngày ${quickFrom} đến ngày ${e.target.value}`);
-                }}
-                style={{ padding: '0.35rem 0.65rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.92rem', fontWeight: 700, color: '#1e40af', background: '#fff' }}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <span style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 600 }}>Đến ngày:</span>
+                <input
+                  type="date"
+                  value={quickTo}
+                  onChange={(e) => {
+                    setQuickTo(e.target.value);
+                    setQuickNote(`Xuất kho đợt từ ngày ${quickFrom} đến ngày ${e.target.value}`);
+                  }}
+                  style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #94a3b8', fontSize: '0.92rem', fontWeight: 700, color: '#1e40af', background: '#fff' }}
+                />
+              </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>
-              📦 DANH SÁCH MẶT HÀNG TỒN KHO ({report?.rows.length ?? 0} MẶT HÀNG):
+              DANH SÁCH MẶT HÀNG TỒN KHO ({activeReport?.rows.length ?? 0} MẶT HÀNG):
             </span>
           </div>
 
           <div className="table-wrap" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
-            <table className="data-table">
+            {/* Desktop Table View */}
+            <table className="data-table desktop-table">
               <thead>
                 <tr>
                   <th style={{ width: '40px', textAlign: 'center' }}>STT</th>
@@ -681,6 +909,81 @@ export default function InventoryPage() {
                 )}
               </tbody>
             </table>
+
+            {/* Mobile Card List View cho Modal Kiểm Kê */}
+            <div className="mobile-card-list">
+              {!report?.rows.length ? (
+                <div className="table-empty">Không có sản phẩm nào trong kỳ báo cáo kho</div>
+              ) : (
+                report.rows.map((row, idx) => {
+                  const rawVal = quickCounts[row.key];
+                  const remainVal = rawVal !== undefined && rawVal !== '' ? Number(rawVal) : row.closingQty;
+                  const issueQty = Math.max(0, row.closingQty - remainVal);
+                  const isExcess = remainVal > row.closingQty;
+
+                  return (
+                    <div
+                      key={row.key}
+                      className="mobile-card"
+                      style={{
+                        background: issueQty > 0 ? '#f0fdf4' : '#ffffff',
+                        border: issueQty > 0 ? '1.5px solid #86efac' : '1px solid var(--df-border)',
+                        padding: '1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.75rem',
+                        borderRadius: '12px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>{idx + 1}. {row.itemName}</strong>
+                          <span style={{ fontSize: '0.82rem', color: '#64748b', marginLeft: '0.4rem' }}>({row.unit})</span>
+                        </div>
+                        <span style={{ fontSize: '0.82rem', color: '#1e293b', fontWeight: 700, background: '#f1f5f9', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>
+                          Tồn hệ thống: {row.closingQty}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.84rem', fontWeight: 700, color: '#334155' }}>
+                          Nhập số lượng tồn còn lại thực tế:
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={rawVal ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setQuickCounts((prev) => ({ ...prev, [row.key]: val }));
+                          }}
+                          placeholder={`Mặc định: ${row.closingQty}`}
+                          style={{
+                            width: '100%',
+                            minHeight: '44px',
+                            textAlign: 'center',
+                            color: issueQty > 0 ? '#15803d' : '#0f172a',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      {issueQty > 0 ? (
+                        <div style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #86efac', textAlign: 'center', fontSize: '0.92rem' }}>
+                          Tự động tạo xuất: <strong>{issueQty}</strong> {row.unit}
+                        </div>
+                      ) : isExcess ? (
+                        <div style={{ color: '#c2410c', fontSize: '0.8rem', fontWeight: 600, textAlign: 'center', background: '#fff7ed', padding: '0.4rem', borderRadius: '6px' }}>
+                          Tồn thực tế lớn hơn hệ thống (+{remainVal - row.closingQty})
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
 
           <label>
@@ -741,9 +1044,9 @@ export default function InventoryPage() {
               type="submit"
               className="btn-primary"
               disabled={quickSubmitting}
-              style={{ background: '#2563eb', padding: '0.5rem 1.25rem' }}
+              style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', padding: '0.55rem 1.35rem', fontWeight: 700 }}
             >
-              {quickSubmitting ? 'Đang tạo phiếu xuất…' : '⚡ Xác nhận & Tự động tạo Phiếu xuất'}
+              {quickSubmitting ? 'Đang tạo phiếu xuất…' : 'Xác nhận & Tự động tạo Phiếu xuất'}
             </button>
           </div>
         </form>
@@ -771,7 +1074,9 @@ export default function InventoryPage() {
               }}
             >
               <div>
-                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>📄 Mã phiếu xuất:</span>
+                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>
+                  <FileText size={14} color="#64748b" style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} /> Mã phiếu xuất:
+                </span>
                 <strong style={{ color: 'var(--df-primary)', fontSize: '1.05rem' }}>{selectedIssueDetail.issueCode}</strong>
               </div>
 
@@ -785,22 +1090,30 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>🏢 Cơ sở kho:</span>
+                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>
+                  <Building2 size={14} color="#64748b" style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} /> Cơ sở kho:
+                </span>
                 <strong style={{ color: '#0f172a' }}>{selectedIssueDetail.facilityName || 'Cơ sở'}</strong>
               </div>
 
               <div>
-                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>📅 Ngày xuất kho:</span>
+                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>
+                  <Calendar size={14} color="#64748b" style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} /> Ngày xuất kho:
+                </span>
                 <strong style={{ color: '#0f172a' }}>{formatDateTime(selectedIssueDetail.issueDate)}</strong>
               </div>
 
               <div>
-                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>👤 Người lập phiếu:</span>
+                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>
+                  <User size={14} color="#64748b" style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} /> Người lập phiếu:
+                </span>
                 <strong style={{ color: '#0f172a' }}>{selectedIssueDetail.createdBy || 'Admin'}</strong>
               </div>
 
               <div>
-                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>⏰ Thời gian khởi tạo:</span>
+                <span style={{ color: '#64748b', display: 'block', fontSize: '0.82rem' }}>
+                  <Clock size={14} color="#64748b" style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} /> Thời gian khởi tạo:
+                </span>
                 <strong style={{ color: '#475569', fontSize: '0.85rem' }}>{formatDateTime(selectedIssueDetail.createdAt)}</strong>
               </div>
 
@@ -812,8 +1125,8 @@ export default function InventoryPage() {
 
             {/* Danh sách mặt hàng xuất & Đối chiếu Tồn ban đầu, Xuất, Tồn còn lại */}
             <div>
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.5rem' }}>
-                📦 CHI TIẾT MẶT HÀNG & ĐỐI CHIẾU TỒN KHO ({selectedIssueDetail.items.length} DÒNG):
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                <Package size={16} color="#1e293b" /> CHI TIẾT MẶT HÀNG & ĐỐI CHIẾU TỒN KHO ({selectedIssueDetail.items.length} DÒNG):
               </span>
               <div className="table-wrap">
                 <table className="data-table">
@@ -837,16 +1150,16 @@ export default function InventoryPage() {
 
                       return (
                         <tr key={idx}>
-                          <td style={{ textAlign: 'center', color: '#64748b' }}>{idx + 1}</td>
-                          <td><strong>{it.itemName}</strong></td>
-                          <td style={{ textAlign: 'center' }}>{it.unit}</td>
-                          <td style={{ textAlign: 'right', fontWeight: 600, color: '#475569' }}>
+                          <td data-label="STT" style={{ textAlign: 'center', color: '#64748b' }}>{idx + 1}</td>
+                          <td data-label="Mặt hàng"><strong>{it.itemName}</strong></td>
+                          <td data-label="ĐVT" style={{ textAlign: 'center' }}>{it.unit}</td>
+                          <td data-label="Tồn ban đầu" style={{ textAlign: 'right', fontWeight: 600, color: '#475569' }}>
                             {initialStock}
                           </td>
-                          <td style={{ textAlign: 'right', fontWeight: 700, color: '#15803d', fontSize: '1.05rem', background: '#f0fdf4' }}>
+                          <td data-label="Số lượng xuất" style={{ textAlign: 'right', fontWeight: 700, color: '#15803d', fontSize: '1.05rem', background: '#f0fdf4' }}>
                             {it.quantity}
                           </td>
-                          <td style={{ textAlign: 'right', fontWeight: 700, color: '#1e40af', background: '#eff6ff' }}>
+                          <td data-label="Tồn còn lại" style={{ textAlign: 'right', fontWeight: 700, color: '#1e40af', background: '#eff6ff' }}>
                             {remainingStock}
                           </td>
                         </tr>
@@ -977,13 +1290,13 @@ export default function InventoryPage() {
 
                       return (
                         <tr key={idx} style={{ background: calculatedIssueQty > 0 ? '#f0fdf4' : isExcess ? '#fff7ed' : undefined }}>
-                          <td style={{ textAlign: 'center', color: '#64748b' }}>{idx + 1}</td>
-                          <td><strong style={{ fontSize: '0.95rem' }}>{it.itemName}</strong></td>
-                          <td style={{ textAlign: 'center' }}>{it.unit}</td>
-                          <td style={{ textAlign: 'right', fontWeight: 700, color: '#475569', fontSize: '1rem' }}>
+                          <td data-label="STT" style={{ textAlign: 'center', color: '#64748b' }}>{idx + 1}</td>
+                          <td data-label="Mặt hàng"><strong style={{ fontSize: '0.95rem' }}>{it.itemName}</strong></td>
+                          <td data-label="ĐVT" style={{ textAlign: 'center' }}>{it.unit}</td>
+                          <td data-label="Tồn ban đầu" style={{ textAlign: 'right', fontWeight: 700, color: '#475569', fontSize: '1rem' }}>
                             {it.initialStock}
                           </td>
-                          <td style={{ textAlign: 'center' }}>
+                          <td data-label="Tồn còn lại thực tế" style={{ textAlign: 'center' }}>
                             <input
                               type="number"
                               min="0"
@@ -1010,7 +1323,7 @@ export default function InventoryPage() {
                               required
                             />
                           </td>
-                          <td style={{ textAlign: 'right' }}>
+                          <td data-label="Số lượng xuất" style={{ textAlign: 'right' }}>
                             {calculatedIssueQty > 0 ? (
                               <strong style={{ color: '#15803d', fontSize: '1.1rem', background: '#dcfce7', padding: '0.3rem 0.75rem', borderRadius: '6px', border: '1px solid #86efac' }}>
                                 Xuất {calculatedIssueQty}
@@ -1023,7 +1336,7 @@ export default function InventoryPage() {
                               <span style={{ color: '#94a3b8' }}>0</span>
                             )}
                           </td>
-                          <td style={{ textAlign: 'center' }}>
+                          <td data-label="Thao tác" style={{ textAlign: 'center' }}>
                             <button
                               type="button"
                               className="btn-action-delete"

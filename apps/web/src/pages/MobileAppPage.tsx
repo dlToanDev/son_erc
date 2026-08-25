@@ -80,7 +80,7 @@ export default function MobileAppPage() {
       {/* 📱 Mobile Top Navigation Header */}
       <header style={{ background: '#1e3a8a', color: '#fff', padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <img src="/logo.jpeg" alt="Garden Chay" style={{ width: 34, height: 34, borderRadius: '50%', border: '2px solid #4ade80' }} />
+          <img src="/logo.jpeg" alt="Garden Chay" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'contain' }} />
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#4ade80', lineHeight: 1.1 }}>Garden Chay Mobile</div>
             <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>Hệ thống Web Mobile UI (18 Trang & 20 Form)</div>

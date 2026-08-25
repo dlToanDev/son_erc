@@ -100,11 +100,11 @@ export default function AuditLogPage() {
             )}
             {data?.data.map((e) => (
               <tr key={e.id}>
-                <td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(e.time)}</td>
-                <td>{e.userName ?? e.userId ?? 'Hệ thống'}</td>
-                <td><span className="badge badge-primary">{e.action}</span></td>
-                <td>{e.entityType}</td>
-                <td>{e.detail ?? '—'}</td>
+                <td data-label="Thời gian" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(e.time)}</td>
+                <td data-label="Người dùng">{e.userName ?? e.userId ?? 'Hệ thống'}</td>
+                <td data-label="Hành động"><span className="badge badge-primary">{e.action}</span></td>
+                <td data-label="Đối tượng">{e.entityType}</td>
+                <td data-label="Chi tiết">{e.detail ?? '—'}</td>
               </tr>
             ))}
           </tbody>

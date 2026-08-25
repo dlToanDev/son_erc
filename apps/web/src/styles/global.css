@@ -1185,18 +1185,39 @@ button {
   }
   
   .card-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--df-border);
+    display: flex !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
+    margin-top: 0.55rem !important;
+    padding-top: 0.75rem !important;
+    border-top: 1px solid var(--df-border) !important;
+    box-sizing: border-box !important;
   }
   
-  .card-actions button {
-    flex: 1;
-    min-height: 40px;
-    font-size: 0.85rem;
-    padding: 0.5rem;
+  .card-actions > div {
+    display: flex !important;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    gap: 0.5rem !important;
+    box-sizing: border-box !important;
+  }
+  
+  .card-actions button,
+  .card-actions a,
+  .card-actions > div > button,
+  .card-actions > div > a {
+    flex: 1 1 0 !important;
+    width: 100% !important;
+    min-height: 42px !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    padding: 0.45rem 0.5rem !important;
+    justify-content: center !important;
+    align-items: center !important;
+    display: inline-flex !important;
+    text-align: center !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
   }
   
   /* SCROLLING TABLES (For tables that remain tables) */
@@ -1234,6 +1255,104 @@ button {
   .tab {
     min-height: 44px;
     white-space: nowrap;
+  }
+}
+
+/* ==========================================================================
+   📱 RESPONSIVE STACKED TABLES (≤ 868px)
+   Mọi bảng .data-table THÔ (không dùng cặp desktop-table + mobile-card-list)
+   tự chuyển sang dạng thẻ xếp chồng: mỗi ô là 1 dòng "Nhãn cột: Giá trị".
+   Thêm data-label="Tên cột" vào từng <td> để hiện nhãn.
+   ========================================================================== */
+@media (max-width: 868px) {
+  /* Bỏ khung/nền của table-wrap để các thẻ tự đứng riêng */
+  .table-wrap {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .data-table:not(.desktop-table) thead {
+    display: none;
+  }
+
+  .data-table:not(.desktop-table),
+  .data-table:not(.desktop-table) tbody,
+  .data-table:not(.desktop-table) tr,
+  .data-table:not(.desktop-table) td {
+    display: block;
+    width: 100%;
+  }
+
+  .data-table:not(.desktop-table) tr {
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--df-border);
+    border-radius: 12px;
+    background: #fff;
+    padding: 0.25rem 0.9rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .data-table:not(.desktop-table) td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    text-align: right !important;
+    padding: 0.55rem 0 !important;
+    border: none;
+    border-bottom: 1px dashed var(--df-border);
+    font-size: 0.9rem;
+    min-height: auto;
+  }
+
+  .data-table:not(.desktop-table) td:last-child {
+    border-bottom: none;
+  }
+
+  .data-table:not(.desktop-table) td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #64748b;
+    text-align: left;
+    padding-right: 0.75rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Dòng tổng cộng vẫn nổi bật */
+  .data-table:not(.desktop-table) tr.order-total-row {
+    background: #f8fafc;
+    font-weight: 700;
+  }
+  .data-table:not(.desktop-table) tr.order-total-row td {
+    border-bottom-color: #e2e8f0;
+  }
+
+  /* Lưới thẻ ép cứng repeat(3|4, 1fr) inline → gom về 1 cột trên mobile
+     (các lưới repeat(auto-fit, ...) tự co giãn nên không đụng tới). */
+  [style*="grid-template-columns"][style*="repeat(3"],
+  [style*="grid-template-columns"][style*="repeat(4"],
+  [style*="grid-template-columns"][style*="repeat(5"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Thanh lọc trong header (các <div> flex chứa select/ô tìm kiếm):
+     cho xuống hàng & các ô lọc chiếm trọn chiều ngang, tránh tràn/cắt. */
+  .page-header > div {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .search-input,
+  .page-header select,
+  .page-header input[type='text'],
+  .page-header input[type='search'],
+  .page-header input[type='date'] {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 }
 
@@ -1467,62 +1586,164 @@ button {
 }
 
 /* ==========================================================================
-   📱 BỘ LỌC ĐẦU TRANG — xếp dọc, đồng nhất, gọn gàng (≤ 868px)
+   📱 BỘ LỌC ĐẦU TRANG & FORM MODAL DẠNG THẺ (CARD PILLS & FORM CARDS)
    ========================================================================== */
 @media (max-width: 868px) {
-  /* Wrapper của các filter là <div> nên không được rule width:100% chung
-     bắt trúng → tự căn full-width ở mọi vị trí (page-actions, page-header,
-     fieldset của trang So sánh…) cho thẳng hàng */
+  /* Bộ lọc đầu trang full-width xếp dọc */
+  .page-actions,
+  .filter-bar {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+  }
+
   .unified-facility-select {
     display: block !important;
     width: 100% !important;
   }
 
+  .unified-facility-btn {
+    width: 100% !important;
+    min-height: 48px !important;
+    border-radius: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 0.65rem 1rem !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+  }
+
   .unified-date-filter {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  /* Ô chọn nhanh (Tháng này…) chiếm trọn chiều ngang, canh giữa icon + select */
-  .unified-date-filter .udf-preset {
-    width: 100%;
-    box-sizing: border-box;
-  }
-  .unified-date-filter .udf-preset select {
-    flex: 1;
-    width: 100%;
-  }
-
-  /* Hàng khoảng ngày: hai ô ngày chia đều, chữ "đến" ở giữa không bị bóp */
-  .unified-date-filter .udf-range {
-    width: 100%;
-  }
-  .unified-date-filter .udf-range input {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-  .unified-date-filter .udf-range span {
-    flex-shrink: 0;
-  }
-
-  /* Thanh bộ lọc tùy biến (vd trang Thanh toán): xếp dọc, mỗi ô full-width */
-  .filter-bar {
+    width: 100% !important;
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 0.6rem !important;
   }
-  .filter-bar > div {
-    width: 100%;
-    min-width: 0 !important;
+
+  .unified-date-filter .udf-preset {
+    width: 100% !important;
+    min-height: 48px !important;
+    border-radius: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 0.65rem 1rem !important;
+    background: #f8fafc !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+  }
+
+  .unified-date-filter .udf-preset select {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    width: 100% !important;
+  }
+
+  .unified-date-filter .udf-range {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+
+  .unified-date-filter .udf-range input {
+    flex: 1 1 0 !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    border-radius: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    text-align: center !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+  }
+
+  .search-input,
+  .filter-bar select,
+  .filter-bar input {
+    width: 100% !important;
+    min-height: 46px !important;
+    border-radius: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 0.6rem 0.9rem !important;
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+  }
+
+  .btn-group-responsive {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+  .btn-group-responsive button,
+  .btn-group-responsive .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 46px !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+  }
+
+  .modal-filter-box {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+  }
+  .modal-filter-box select,
+  .modal-filter-box input[type='date'],
+  .modal-filter-box input[type='text'],
+  .modal-filter-box input[type='number'] {
+    width: 100% !important;
     flex: 1 1 auto !important;
+    min-height: 44px !important;
+    border-radius: 10px !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 0.55rem 0.85rem !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    box-sizing: border-box !important;
   }
-  .filter-bar > div > select,
-  .filter-bar > div > input,
-  .filter-bar > div > .search-input {
-    flex: 1;
-    width: 100%;
-    min-width: 0 !important;
+  .modal-filter-date-group {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
   }
+  .modal-filter-date-group > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.25rem !important;
+    width: 100% !important;
+  }
+}
+
+.btn-group-responsive {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.modal-filter-box {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  background: #f8fafc;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+}
+
+.modal-filter-date-group {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
 }

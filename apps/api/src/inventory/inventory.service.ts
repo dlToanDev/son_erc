@@ -194,14 +194,41 @@ export class InventoryService {
 
   /** Báo cáo NXT: Tồn cuối = Tồn đầu + Nhập − Xuất theo cơ sở & khoảng ngày. */
   async report(facilityId: string | undefined, from: string, to: string): Promise<InventoryReportResult> {
-    const { receipts, issues } = await this.loadLedger(this.prisma, facilityId);
-    return inventoryReport({
+    const [{ receipts, issues }, supplierProducts] = await Promise.all([
+      this.loadLedger(this.prisma, facilityId),
+      this.prisma.supplierProduct.findMany({
+        select: { name: true, unit: true, price: true, supplier: { select: { name: true } } },
+      }),
+    ]);
+
+    const productPrices: Record<string, number> = {};
+    const productSuppliers = new Map<string, Set<string>>();
+    supplierProducts.forEach((sp) => {
+      const key = inventoryKey(sp.name, sp.unit ?? '');
+      productPrices[key] = Number(sp.price || 0);
+      if (sp.supplier?.name) {
+        const set = productSuppliers.get(key) ?? new Set<string>();
+        set.add(sp.supplier.name);
+        productSuppliers.set(key, set);
+      }
+    });
+
+    const result = inventoryReport({
       purchaseReceipts: receipts,
       inventoryIssues: issues,
       facilityId: facilityId ?? '',
       from,
       to,
+      productPrices,
     });
+
+    return {
+      ...result,
+      rows: result.rows.map((row) => ({
+        ...row,
+        supplierName: [...(productSuppliers.get(row.key) ?? [])].join(', ') || undefined,
+      })),
+    };
   }
 
   /** Kiểm tra tồn khả dụng trước khi xuất — FE gọi để chặn ngay trên UI. */
@@ -314,6 +341,7 @@ export class InventoryService {
           itemName: i.itemName,
           unit: i.unit,
           quantity: Number(i.quantity),
+          unitPrice: Number(i.unitPrice || 0),
         })),
       })),
       issues: issues.map((i) => ({

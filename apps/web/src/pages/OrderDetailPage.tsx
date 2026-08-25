@@ -243,14 +243,14 @@ export default function OrderDetailPage() {
           <tbody>
             {order.items.map((item) => (
               <tr key={item.id}>
-                <td>{item.name}</td>
-                <td style={{ textAlign: 'center' }}>{item.unit}</td>
-                <td style={{ textAlign: 'right', fontWeight: 600 }}>{item.quantity}</td>
+                <td data-label="Mặt hàng">{item.name}</td>
+                <td data-label="ĐVT" style={{ textAlign: 'center' }}>{item.unit}</td>
+                <td data-label="Số lượng" style={{ textAlign: 'right', fontWeight: 600 }}>{item.quantity}</td>
                 {currentUser?.role === 'ADMIN' && (
-                  <td style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
+                  <td data-label="Đơn giá" style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
                 )}
                 {currentUser?.role === 'ADMIN' && (
-                  <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                  <td data-label="Thành tiền" style={{ textAlign: 'right', fontWeight: 600 }}>
                     {formatMoney(item.unitPrice * item.quantity)}
                   </td>
                 )}

@@ -1039,23 +1039,23 @@ export default function SupplierDetailPage() {
                         navigate(`/orders/${o.id}`);
                       }
                     }}>
-                      <td>
+                      <td data-label="Mã đơn hàng">
                         <strong style={{ color: 'var(--df-primary)' }}>{o.orderCode}</strong>
                       </td>
-                      <td>{o.facilityName}</td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td data-label="Cơ sở nhận">{o.facilityName}</td>
+                      <td data-label="Số mặt hàng" style={{ textAlign: 'center' }}>
                         <span className="badge badge-muted">{o.items.length} món</span>
                       </td>
                       {currentUser?.role === 'ADMIN' && (
-                        <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
+                        <td data-label="Tổng tiền" style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
                           {formatMoney(o.total)}
                         </td>
                       )}
-                      <td style={{ textAlign: 'center' }}>
+                      <td data-label="Trạng thái" style={{ textAlign: 'center' }}>
                         <OrderStatusBadge status={o.status} />
                       </td>
-                      <td style={{ textAlign: 'center' }}>{formatDateTime(o.createdAt)}</td>
-                      <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <td data-label="Ngày tạo đơn" style={{ textAlign: 'center' }}>{formatDateTime(o.createdAt)}</td>
+                      <td data-label="Thao tác" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                         {(currentUser?.role === 'ADMIN' || o.status === 'PENDING') && (
                           <button
                             type="button"
@@ -1099,17 +1099,17 @@ export default function SupplierDetailPage() {
                 ) : (
                   filteredPayables.map((p) => (
                     <tr key={p.id} className="clickable" onClick={() => navigate(`/payables/${p.id}`)}>
-                      <td><strong style={{ color: 'var(--df-primary)' }}>{p.invoiceCode}</strong></td>
-                      <td>{formatDateTime(p.invoiceDate)}</td>
-                      <td>{formatDateTime(p.dueDate)}</td>
-                      <td style={{ textAlign: 'right' }}>{formatMoney(p.totalAmount)}</td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td data-label="Số hoá đơn"><strong style={{ color: 'var(--df-primary)' }}>{p.invoiceCode}</strong></td>
+                      <td data-label="Ngày HĐ">{formatDateTime(p.invoiceDate)}</td>
+                      <td data-label="Đến hạn">{formatDateTime(p.dueDate)}</td>
+                      <td data-label="Tổng tiền" style={{ textAlign: 'right' }}>{formatMoney(p.totalAmount)}</td>
+                      <td data-label="Còn lại" style={{ textAlign: 'right' }}>
                         <strong className={p.balance > 0 ? 'text-danger' : undefined}>
                           {formatMoney(p.balance)}
                         </strong>
                       </td>
-                      <td><PayableStatusBadge status={p.status} /></td>
-                      <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <td data-label="Trạng thái"><PayableStatusBadge status={p.status} /></td>
+                      <td data-label="Thao tác" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                         {p.balance > 0 && (
                           <button
                             type="button"
@@ -1167,14 +1167,14 @@ export default function SupplierDetailPage() {
                 ) : (
                   filteredPayments.map((pm) => (
                     <tr key={pm.id} className="clickable" onClick={() => setSelectedPaymentDetail(pm)}>
-                      <td>{formatDateTime(pm.paymentDate)}</td>
-                      <td><strong style={{ color: 'var(--df-primary)' }}>{pm.invoiceCode}</strong></td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: pm.status === 'ACTIVE' ? '#16a34a' : '#94a3b8' }}>
+                      <td data-label="Ngày thanh toán">{formatDateTime(pm.paymentDate)}</td>
+                      <td data-label="Mã hoá đơn"><strong style={{ color: 'var(--df-primary)' }}>{pm.invoiceCode}</strong></td>
+                      <td data-label="Số tiền" style={{ textAlign: 'right', fontWeight: 700, color: pm.status === 'ACTIVE' ? '#16a34a' : '#94a3b8' }}>
                         {formatMoney(pm.amount)}
                       </td>
-                      <td>{pm.paymentMethod ?? '—'}</td>
-                      <td>{pm.transactionCode ?? '—'}</td>
-                      <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <td data-label="Phương thức">{pm.paymentMethod ?? '—'}</td>
+                      <td data-label="Mã GD">{pm.transactionCode ?? '—'}</td>
+                      <td data-label="Minh chứng" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                         {pm.proofUrl ? (
                           <button
                             type="button"
@@ -1188,14 +1188,14 @@ export default function SupplierDetailPage() {
                           '—'
                         )}
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td data-label="Trạng thái" style={{ textAlign: 'center' }}>
                         {pm.status === 'ACTIVE' ? (
                           <span className="badge badge-success">Hiệu lực</span>
                         ) : (
                           <span className="badge badge-muted">Đã huỷ</span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <td data-label="Thao tác" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           className="btn-action-view"

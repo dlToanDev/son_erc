@@ -5,6 +5,7 @@ export interface InventoryItemLike {
   itemName: string;
   unit?: string;
   quantity: number;
+  unitPrice?: number;
 }
 
 export interface ReceiptLike {
@@ -29,6 +30,11 @@ export interface InventoryRow {
   receivedQty: number;
   issuedQty: number;
   closingQty: number;
+  openingVal: number;
+  receivedVal: number;
+  issuedVal: number;
+  closingVal: number;
+  avgPrice: number;
 }
 
 export interface InventoryTotals {
@@ -36,6 +42,10 @@ export interface InventoryTotals {
   receivedQty: number;
   issuedQty: number;
   closingQty: number;
+  openingVal: number;
+  receivedVal: number;
+  issuedVal: number;
+  closingVal: number;
 }
 
 export function inventoryKey(itemName: string, unit?: string): string {
@@ -52,6 +62,7 @@ export interface InventoryReportInput {
   facilityId?: string;
   from: string;
   to: string;
+  productPrices?: Record<string, number>;
 }
 
 export function inventoryReport({
@@ -60,7 +71,34 @@ export function inventoryReport({
   facilityId = '',
   from,
   to,
+  productPrices = {},
 }: InventoryReportInput): { rows: InventoryRow[]; totals: InventoryTotals } {
+  const prices = new Map<string, { totalQty: number; totalVal: number }>();
+  
+  purchaseReceipts.forEach((r) => {
+    if (r.status === 'CONFIRMED') {
+      (r.items || []).forEach((item) => {
+        if (!item?.itemName) return;
+        const qty = Number(item.quantity || 0);
+        const unitPrice = Number(item.unitPrice || 0);
+        if (qty <= 0) return;
+        const key = inventoryKey(item.itemName, item.unit);
+        const p = prices.get(key) || { totalQty: 0, totalVal: 0 };
+        p.totalQty += qty;
+        p.totalVal += qty * unitPrice;
+        prices.set(key, p);
+      });
+    }
+  });
+
+  const getPrice = (key: string) => {
+    const p = prices.get(key);
+    if (p && p.totalQty > 0 && p.totalVal > 0) {
+      return p.totalVal / p.totalQty;
+    }
+    return productPrices[key] || 0;
+  };
+
   const rows = new Map<string, InventoryRow>();
 
   const add = (item: InventoryItemLike, date: string, sign: number) => {
@@ -76,13 +114,28 @@ export function inventoryReport({
       receivedQty: 0,
       issuedQty: 0,
       closingQty: 0,
+      openingVal: 0,
+      receivedVal: 0,
+      issuedVal: 0,
+      closingVal: 0,
+      avgPrice: getPrice(key),
     };
+    
     const day = String(date).slice(0, 10);
+    const avgPrice = row.avgPrice;
+    const val = quantity * avgPrice;
+    
     if (day < from) {
       row.openingQty += sign * quantity;
+      row.openingVal += sign * val;
     } else if (day <= to) {
-      if (sign > 0) row.receivedQty += quantity;
-      else row.issuedQty += quantity;
+      if (sign > 0) {
+        row.receivedQty += quantity;
+        row.receivedVal += val;
+      } else {
+        row.issuedQty += quantity;
+        row.issuedVal += val;
+      }
     }
     rows.set(key, row);
   };
@@ -96,7 +149,11 @@ export function inventoryReport({
     .forEach((r) => (r.items || []).forEach((item) => add(item, r.issueDate, -1)));
 
   const list = [...rows.values()]
-    .map((row) => ({ ...row, closingQty: row.openingQty + row.receivedQty - row.issuedQty }))
+    .map((row) => ({ 
+        ...row, 
+        closingQty: row.openingQty + row.receivedQty - row.issuedQty,
+        closingVal: row.openingVal + row.receivedVal - row.issuedVal 
+    }))
     .filter((row) => row.openingQty || row.receivedQty || row.issuedQty)
     .sort(
       (a, b) =>
@@ -109,8 +166,12 @@ export function inventoryReport({
       receivedQty: sum.receivedQty + row.receivedQty,
       issuedQty: sum.issuedQty + row.issuedQty,
       closingQty: sum.closingQty + row.closingQty,
+      openingVal: sum.openingVal + row.openingVal,
+      receivedVal: sum.receivedVal + row.receivedVal,
+      issuedVal: sum.issuedVal + row.issuedVal,
+      closingVal: sum.closingVal + row.closingVal,
     }),
-    { openingQty: 0, receivedQty: 0, issuedQty: 0, closingQty: 0 },
+    { openingQty: 0, receivedQty: 0, issuedQty: 0, closingQty: 0, openingVal: 0, receivedVal: 0, issuedVal: 0, closingVal: 0 },
   );
 
   return { rows: list, totals };

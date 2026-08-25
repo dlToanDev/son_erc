@@ -336,11 +336,11 @@ export default function PayablesPage() {
                     {(selectedPayable.items ?? []).length > 0 ? (
                       (selectedPayable.items ?? []).map((item, idx) => (
                         <tr key={item.id || idx}>
-                          <td>{item.itemName}</td>
-                          <td style={{ textAlign: 'center' }}>{item.unit}</td>
-                          <td style={{ textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
-                          <td style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
-                          <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                          <td data-label="Tên mặt hàng">{item.itemName}</td>
+                          <td data-label="ĐVT" style={{ textAlign: 'center' }}>{item.unit}</td>
+                          <td data-label="Số lượng" style={{ textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
+                          <td data-label="Đơn giá" style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
+                          <td data-label="Thành tiền" style={{ textAlign: 'right', fontWeight: 600 }}>
                             {formatMoney(item.quantity * item.unitPrice)}
                           </td>
                         </tr>

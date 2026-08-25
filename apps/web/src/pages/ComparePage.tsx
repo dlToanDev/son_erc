@@ -409,15 +409,15 @@ export default function ComparePage() {
               const diff = r.costB - r.costA;
               return (
                 <tr key={`${r.itemName}|${r.unit}`}>
-                  <td><strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>{r.itemName}</strong></td>
-                  <td style={{ textAlign: 'center' }}>{r.unit}</td>
-                  <td style={{ textAlign: 'right', color: '#3b82f6', fontWeight: 600 }}>{r.quantityA}</td>
-                  <td style={{ textAlign: 'right', color: '#1d4ed8', fontWeight: 700 }}>{formatMoney(r.costA)}</td>
-                  <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{r.quantityB}</td>
-                  <td style={{ textAlign: 'right', color: diff > 0 ? '#dc2626' : '#047857', fontWeight: 700 }}>
+                  <td data-label="Mặt hàng"><strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>{r.itemName}</strong></td>
+                  <td data-label="ĐVT" style={{ textAlign: 'center' }}>{r.unit}</td>
+                  <td data-label="Kỳ A · SL" style={{ textAlign: 'right', color: '#3b82f6', fontWeight: 600 }}>{r.quantityA}</td>
+                  <td data-label="Kỳ A · Chi phí" style={{ textAlign: 'right', color: '#1d4ed8', fontWeight: 700 }}>{formatMoney(r.costA)}</td>
+                  <td data-label="Kỳ B · SL" style={{ textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{r.quantityB}</td>
+                  <td data-label="Kỳ B · Chi phí" style={{ textAlign: 'right', color: diff > 0 ? '#dc2626' : '#047857', fontWeight: 700 }}>
                     {formatMoney(r.costB)}
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td data-label="Biến động B vs A" style={{ textAlign: 'right' }}>
                     <ChangeBadge change={r.costChange} />
                   </td>
                 </tr>
