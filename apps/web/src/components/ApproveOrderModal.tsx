@@ -22,6 +22,8 @@ interface Props {
 /** Cửa sổ Duyệt đơn — Admin có thể thêm/bớt mặt hàng & sửa đơn giá trước khi duyệt. */
 export default function ApproveOrderModal({ order, open, onClose }: Props) {
   const isAdmin = useAuthStore((s) => s.user?.role === 'ADMIN');
+  const can = useAuthStore((s) => s.can);
+  const canSeeMoney = isAdmin || can('orders', 'viewPrice');
   const { approve, update } = useOrderMutations();
   const { data: products = [] } = useProducts(order?.supplierId ?? '');
   const activeProducts = products.filter((p) => p.status === 'ACTIVE');
@@ -79,10 +81,10 @@ export default function ApproveOrderModal({ order, open, onClose }: Props) {
               setLines={setLines}
               products={activeProducts}
               editable={isAdmin}
-              showPrice={isAdmin}
+              showPrice={canSeeMoney}
             />
           </div>
-          {isAdmin && (
+          {canSeeMoney && (
             <div
               style={{
                 background: '#eff6ff',

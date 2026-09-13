@@ -10,25 +10,47 @@ import { formatDateTime } from '../utils/format';
 
 const EMPTY_FORM = { name: '', email: '', password: '', role: 'STAFF' as 'ADMIN' | 'STAFF' };
 
-const MODULE_CONFIG: Record<string, { label: string; icon: string; desc: string }> = {
-  dashboard: { label: 'Tổng quan / Dashboard', icon: '📊', desc: 'Xem KPI, doanh số & cảnh báo công nợ' },
-  suppliers: { label: 'Nhà cung cấp', icon: '🏭', desc: 'Quản lý thông tin & danh mục nhà cung cấp' },
-  products: { label: 'Danh mục Sản phẩm', icon: '📦', desc: 'Quản lý danh sách mặt hàng & đơn giá' },
-  orders: { label: 'Đơn đặt hàng', icon: '🛒', desc: 'Tạo mua hàng & duyệt đơn đặt hàng' },
-  payables: { label: 'Công nợ nhà cung cấp', icon: '💳', desc: 'Theo dõi hoá đơn & thực hiện chi trả' },
-  payments: { label: 'Nhật ký Chi tiền', icon: '💰', desc: 'Xem phiếu chi & lịch sử thanh toán' },
-  inventory: { label: 'Kho Nhập – Xuất – Tồn', icon: '🏭', desc: 'Báo cáo kho NXT & tạo phiếu xuất' },
-  reports: { label: 'Báo cáo & Thống kê', icon: '📈', desc: 'Báo cáo chi phí, sản lượng & so sánh' },
-  audit: { label: 'Audit Log / Nhật ký', icon: '📑', desc: 'Tra cứu lịch sử thao tác người dùng' },
-  users: { label: 'Tài khoản & Phân quyền', icon: '👥', desc: 'Tạo tài khoản & cấu hình quyền hạn' },
-  settings: { label: 'Cấu hình Hệ thống', icon: '⚙️', desc: 'Chỉnh sửa cảnh báo & tham số chung' },
+const MODULE_CONFIG: Record<string, { label: string; desc: string }> = {
+  dashboard: { label: 'Tổng quan / Dashboard', desc: 'Xem KPI, doanh số & cảnh báo công nợ' },
+  suppliers: { label: 'Nhà cung cấp', desc: 'Quản lý thông tin & danh mục nhà cung cấp' },
+  products: { label: 'Danh mục Sản phẩm', desc: 'Quản lý danh sách mặt hàng & đơn giá' },
+  orders: { label: 'Đơn đặt hàng', desc: 'Tạo mua hàng & duyệt đơn đặt hàng' },
+  payables: { label: 'Công nợ nhà cung cấp', desc: 'Theo dõi hoá đơn & thực hiện chi trả' },
+  payments: { label: 'Nhật ký Chi tiền', desc: 'Xem phiếu chi & lịch sử thanh toán' },
+  inventory: { label: 'Kho Nhập – Xuất – Tồn', desc: 'Báo cáo kho NXT & tạo phiếu xuất' },
+  reports: { label: 'Báo cáo & Thống kê', desc: 'Báo cáo chi phí, sản lượng & so sánh' },
+  audit: { label: 'Audit Log / Nhật ký', desc: 'Tra cứu lịch sử thao tác người dùng' },
+  users: { label: 'Tài khoản & Phân quyền', desc: 'Tạo tài khoản & cấu hình quyền hạn' },
+  settings: { label: 'Cấu hình Hệ thống', desc: 'Chỉnh sửa cảnh báo & tham số chung' },
 };
 
-const ACTION_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  view: { label: '👁️ Xem dữ liệu', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
-  edit: { label: '✏️ Thêm / Sửa / Tạo mới', color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  approve: { label: '✅ Duyệt đơn hàng', color: '#854d0e', bg: '#fefce8', border: '#fef08a' },
-  pay: { label: '💳 Thanh toán công nợ', color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff' },
+// label: tên quyền · desc: nội dung dấu "i" giải thích cho người cấp quyền hiểu.
+const ACTION_CONFIG: Record<string, { label: string; desc: string; color: string; bg: string; border: string }> = {
+  view: {
+    label: 'Xem dữ liệu',
+    desc: 'Cho phép mở và xem dữ liệu của chức năng này (chỉ đọc).',
+    color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
+  },
+  edit: {
+    label: 'Thêm / Sửa / Tạo mới',
+    desc: 'Cho phép thêm mới, chỉnh sửa và xoá/huỷ (tuỳ chức năng).',
+    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0',
+  },
+  approve: {
+    label: 'Duyệt đơn hàng',
+    desc: 'Cho phép duyệt / từ chối / nhận hàng / xác nhận thanh toán đơn.',
+    color: '#854d0e', bg: '#fefce8', border: '#fef08a',
+  },
+  pay: {
+    label: 'Thanh toán công nợ',
+    desc: 'Cho phép ghi nhận thanh toán cho công nợ nhà cung cấp.',
+    color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff',
+  },
+  viewPrice: {
+    label: 'Xem tiền',
+    desc: 'Cho phép nhân viên NHÌN THẤY đơn giá & số tiền trong đơn hàng. Bỏ tick = ẩn giá với nhân viên (chỉ thấy mặt hàng & số lượng).',
+    color: '#9a3412', bg: '#fff7ed', border: '#fed7aa',
+  },
 };
 
 export default function UsersPage() {
@@ -398,7 +420,7 @@ export default function UsersPage() {
                 </thead>
                 <tbody>
                   {PERMISSION_MODULES.map(({ module, actions }) => {
-                    const cfg = MODULE_CONFIG[module] || { label: module, icon: '📁', desc: '' };
+                    const cfg = MODULE_CONFIG[module] || { label: module, desc: '' };
                     const allRowChecked = actions.every((a) => permDraft.has(permKey(module, a)));
                     const someRowChecked = actions.some((a) => permDraft.has(permKey(module, a)));
 
@@ -422,14 +444,11 @@ export default function UsersPage() {
 
                         {/* Tên Module & Mô tả */}
                         <td data-label="Chức năng">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                            <span style={{ fontSize: '1.2rem' }}>{cfg.icon}</span>
-                            <div>
-                              <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>
-                                {cfg.label}
-                              </div>
-                              <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{cfg.desc}</div>
+                          <div>
+                            <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>
+                              {cfg.label}
                             </div>
+                            <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{cfg.desc}</div>
                           </div>
                         </td>
 
@@ -473,6 +492,31 @@ export default function UsersPage() {
                                     style={{ width: '15px', height: '15px', accentColor: actCfg.color, cursor: 'pointer' }}
                                   />
                                   <span>{actCfg.label}</span>
+                                  <span
+                                    title={actCfg.desc}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                    }}
+                                    aria-label={actCfg.desc}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '16px',
+                                      height: '16px',
+                                      borderRadius: '50%',
+                                      border: `1.5px solid ${checked ? actCfg.color : '#cbd5e1'}`,
+                                      color: checked ? actCfg.color : '#94a3b8',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 700,
+                                      fontStyle: 'italic',
+                                      lineHeight: 1,
+                                      cursor: 'help',
+                                    }}
+                                  >
+                                    i
+                                  </span>
                                 </label>
                               );
                             })}

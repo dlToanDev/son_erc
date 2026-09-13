@@ -22,6 +22,8 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
   const can = useAuthStore((s) => s.can);
   const currentUser = useAuthStore((s) => s.user);
   const isAdmin = currentUser?.role === 'ADMIN';
+  // Xem tiền: Admin luôn thấy; nhân viên chỉ thấy nếu được cấp quyền orders.viewPrice.
+  const canSeeMoney = isAdmin || can('orders', 'viewPrice');
   const { data: order, isLoading, isError, error: queryError } = useOrder(orderId);
   const { reject, cancel, update, remove } = useOrderMutations();
 
@@ -268,8 +270,8 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
                   <th>Mặt hàng</th>
                   <th style={{ textAlign: 'center' }}>ĐVT</th>
                   <th style={{ textAlign: 'right' }}>Số lượng</th>
-                  {isAdmin && <th style={{ textAlign: 'right' }}>Đơn giá</th>}
-                  {isAdmin && <th style={{ textAlign: 'right' }}>Thành tiền</th>}
+                  {canSeeMoney && <th style={{ textAlign: 'right' }}>Đơn giá</th>}
+                  {canSeeMoney && <th style={{ textAlign: 'right' }}>Thành tiền</th>}
                 </tr>
               </thead>
               <tbody>
@@ -278,17 +280,17 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
                     <td data-label="Mặt hàng">{item.name}</td>
                     <td data-label="ĐVT" style={{ textAlign: 'center' }}>{item.unit}</td>
                     <td data-label="Số lượng" style={{ textAlign: 'right', fontWeight: 600 }}>{item.quantity}</td>
-                    {isAdmin && (
+                    {canSeeMoney && (
                       <td data-label="Đơn giá" style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
                     )}
-                    {isAdmin && (
+                    {canSeeMoney && (
                       <td data-label="Thành tiền" style={{ textAlign: 'right', fontWeight: 600 }}>
                         {formatMoney(item.unitPrice * item.quantity)}
                       </td>
                     )}
                   </tr>
                 ))}
-                {isAdmin && (
+                {canSeeMoney && (
                   <tr className="order-total-row">
                     <td colSpan={4}>Tổng cộng</td>
                     <td style={{ textAlign: 'right' }}>
@@ -314,7 +316,7 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
               <div style={{ padding: '0.85rem 1rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#991b1b', fontSize: '0.9rem', lineHeight: 1.55 }}>
                 <strong style={{ display: 'block', marginBottom: '0.4rem' }}>⚠️ Bạn sắp xóa đơn hàng này!</strong>
                 Mã đơn <strong>{order.orderCode}</strong> — trạng thái <strong>{order.status}</strong>
-                {isAdmin && <> — tổng tiền <strong>{formatMoney(order.total)}</strong></>}.
+                {canSeeMoney && <> — tổng tiền <strong>{formatMoney(order.total)}</strong></>}.
                 {order.resultPayableId && (
                   <div style={{ marginTop: '0.5rem' }}>
                     Đơn này đã phát sinh <strong>công nợ {order.resultPayableCode ?? ''}</strong>. Xóa đơn sẽ
