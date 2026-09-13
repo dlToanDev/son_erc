@@ -79,11 +79,11 @@ Chờ duyệt (PENDING) → Đã duyệt (APPROVED) → Đã nhận hàng (RECEI
 ## Phần 2 — Công nợ (Payable)
 
 - Payable chỉ tồn tại từ khi đơn **Đã nhận hàng** → danh sách công nợ tự nhiên = đơn đã nhận hàng.
-- Đơn **Đã thanh toán** = payable có số dư 0 (status runtime PAID) → **mặc định ẩn** khỏi
-  danh sách "còn nợ"; vẫn xem được khi chọn bộ lọc trạng thái = PAID.
+- Đơn **Đã thanh toán** = payable có số dư 0 (status runtime PAID) → không còn tính vào nợ.
 - **Tổng nợ theo NCC** = tổng số dư (`balance`) các payable **chưa trả hết** của NCC đó.
-- `PayablesService.findAll`: mặc định (không truyền `status`) trả về payable có `balance > 0`
-  (còn nợ). Khi truyền `status` cụ thể thì lọc theo runtime status như hiện tại.
+- `PayablesService` **không đổi**: vẫn trả toàn bộ payable + tính `balance`/`status` runtime.
+  Trang `PayablesPage` đã tự lọc client-side (còn nợ / đã trả / quá hạn…) và cần cả payable
+  đã trả cho thẻ "Đã thanh toán", nên giữ nguyên là hợp lý.
 - Không thay đổi công thức `invoiceBalance` / `invoiceStatus`.
 
 ## Phần 3 — Sửa đơn giá (chỉ Admin)
@@ -114,8 +114,13 @@ Chờ duyệt (PENDING) → Đã duyệt (APPROVED) → Đã nhận hàng (RECEI
 
 ## Phần 5 — Dữ liệu hiện có
 
-Không migration. Đơn cũ giữ nguyên trạng thái; công nợ cũ giữ nguyên số tiền. Do
-`PayablesService.findAll` mặc định lọc `balance > 0`, công nợ cũ chưa trả vẫn hiển thị bình thường.
+Không migration dữ liệu. Đơn cũ giữ nguyên trạng thái (APPROVED cũ vẫn có sẵn công nợ theo
+luồng cũ); công nợ cũ giữ nguyên số tiền và vẫn hiển thị bình thường ở trang Công nợ.
+
+**Lưu ý triển khai DB:** schema được đồng bộ bằng `prisma db push` (khớp với tình trạng
+drift sẵn có của DB dev — các cột bank/proof cũng từng được push). Chưa tạo file migration.
+Khi deploy production bằng `prisma migrate deploy` cần sinh 1 migration bổ sung enum
+`RECEIVED`/`PAID` + 4 cột `received_by/at`, `paid_by/at`.
 
 ---
 

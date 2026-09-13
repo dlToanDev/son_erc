@@ -343,7 +343,7 @@ export default function ReceiptsPage() {
                     <input
                       type="number"
                       min="0"
-                      step="1000"
+                      step="any"
                       placeholder="Đơn giá nhập"
                       value={line.unitPrice}
                       onChange={(e) => setLine(i, { unitPrice: e.target.value })}
@@ -397,7 +397,7 @@ export default function ReceiptsPage() {
                 <input
                   type="number"
                   min="0"
-                  step="1000"
+                  step="any"
                   placeholder="0"
                   value={form.discountAmount}
                   onChange={(e) => setForm({ ...form, discountAmount: e.target.value })}
@@ -408,7 +408,7 @@ export default function ReceiptsPage() {
                 <input
                   type="number"
                   min="0"
-                  step="1000"
+                  step="any"
                   placeholder="0"
                   value={form.taxAmount}
                   onChange={(e) => setForm({ ...form, taxAmount: e.target.value })}

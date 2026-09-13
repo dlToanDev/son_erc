@@ -71,6 +71,7 @@ export class ReportsService {
 
     // Công nợ hiện tại (runtime) + quá hạn.
     const payables = await this.prisma.payable.findMany({
+      where: { deletedAt: null },
       include: {
         payments: { select: { amount: true, status: true } },
         supplier: { select: { name: true } },
@@ -169,7 +170,7 @@ export class ReportsService {
       update: {},
     });
     const payables = await this.prisma.payable.findMany({
-      where: { dueDate: { not: null } },
+      where: { dueDate: { not: null }, deletedAt: null },
       include: {
         payments: { select: { amount: true, status: true } },
         supplier: { select: { name: true } },
@@ -296,6 +297,7 @@ export class ReportsService {
         status: 'CONFIRMED',
         facilityId: facilityWhere,
         receiptDate: dateRange(from, to),
+        deletedAt: null,
       },
       select: {
         receiptDate: true,
@@ -309,7 +311,11 @@ export class ReportsService {
 
   private async sumPayments(from: string, to: string): Promise<number> {
     const result = await this.prisma.payment.aggregate({
-      where: { status: 'ACTIVE', paymentDate: dateRange(from, to) },
+      where: {
+        status: 'ACTIVE',
+        paymentDate: dateRange(from, to),
+        payable: { deletedAt: null },
+      },
       _sum: { amount: true },
     });
     return Number(result._sum.amount ?? 0);
@@ -325,6 +331,7 @@ export class ReportsService {
         status: 'CONFIRMED',
         facilityId: facilityWhere,
         receiptDate: dateRange(from, to),
+        deletedAt: null,
       },
       select: {
         items: { select: { itemName: true, unit: true, quantity: true, unitPrice: true } },

@@ -328,7 +328,8 @@ export class InventoryService {
     const ids = facilityId ? facilityId.split(',').filter(Boolean) : [];
     const where = ids.length === 1 ? { facilityId: ids[0] } : ids.length > 1 ? { facilityId: { in: ids } } : {};
     const [receipts, issues] = await Promise.all([
-      client.purchaseReceipt.findMany({ where, include: { items: true } }),
+      // Phiếu nhập của đơn đã xóa → loại khỏi sổ kho.
+      client.purchaseReceipt.findMany({ where: { ...where, deletedAt: null }, include: { items: true } }),
       client.inventoryIssue.findMany({ where, include: { items: true } }),
     ]);
     return {

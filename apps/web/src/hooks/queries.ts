@@ -153,11 +153,28 @@ export const useOrderMutations = () => {
     qc.invalidateQueries({ queryKey: ['orders'] });
     if (id) qc.invalidateQueries({ queryKey: keys.order(id) });
   };
+  // Nhận hàng/thanh toán/sửa giá đụng tới công nợ + danh mục → invalidate rộng hơn.
+  const invalidateFinance = (id?: string) => {
+    invalidate(id);
+    qc.invalidateQueries({ queryKey: ['payables'] });
+    qc.invalidateQueries({ queryKey: ['payable'] });
+    qc.invalidateQueries({ queryKey: ['receipts'] });
+    qc.invalidateQueries({ queryKey: ['suppliers'] });
+    qc.invalidateQueries({ queryKey: ['products'] });
+  };
   return {
     create: useMutation({ mutationFn: ordersApi.createOrder, onSuccess: () => invalidate() }),
     approve: useMutation({
       mutationFn: ordersApi.approveOrder,
-      onSuccess: (_d, vars) => invalidate(typeof vars === 'string' ? vars : vars.id),
+      onSuccess: (_d, id) => invalidate(id),
+    }),
+    receive: useMutation({
+      mutationFn: ordersApi.receiveOrder,
+      onSuccess: (_d, vars) => invalidateFinance(typeof vars === 'string' ? vars : vars.id),
+    }),
+    pay: useMutation({
+      mutationFn: ordersApi.payOrder,
+      onSuccess: (_d, vars) => invalidateFinance(typeof vars === 'string' ? vars : vars.id),
     }),
     reject: useMutation({
       mutationFn: ({ id, reason }: { id: string; reason: string }) =>
@@ -171,7 +188,15 @@ export const useOrderMutations = () => {
     update: useMutation({
       mutationFn: ({ id, body }: { id: string; body: ordersApi.UpdateOrderInput }) =>
         ordersApi.updateOrder(id, body),
-      onSuccess: (_d, vars) => invalidate(vars.id),
+      onSuccess: (_d, vars) => invalidateFinance(vars.id),
+    }),
+    remove: useMutation({
+      mutationFn: ordersApi.deleteOrder,
+      onSuccess: (_d, id) => {
+        invalidateFinance(id);
+        qc.invalidateQueries({ queryKey: ['dashboard'] });
+        qc.invalidateQueries({ queryKey: ['debt-alert-counts'] });
+      },
     }),
   };
 };

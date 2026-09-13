@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PurchaseOrderData } from '@debtflow/shared';
 import {
@@ -14,6 +14,10 @@ import DataTable, { Column } from '../components/DataTable';
 import UnifiedFacilitySelect from '../components/UnifiedFacilitySelect';
 import Modal from '../components/Modal';
 import OrderStatusBadge from '../components/OrderStatusBadge';
+import PayOrderModal from '../components/PayOrderModal';
+import ApproveOrderModal from '../components/ApproveOrderModal';
+import ReceiveOrderModal from '../components/ReceiveOrderModal';
+import OrderDetailModal from '../components/OrderDetailModal';
 import {
   useFacilities,
   useOrderMutations,
@@ -22,7 +26,7 @@ import {
   useSuppliers,
 } from '../hooks/queries';
 import { useAuthStore } from '../store/auth';
-import { formatMoney, formatDateTime } from '../utils/format';
+import { formatDateTime } from '../utils/format';
 
 interface DraftLine {
   productId: string;
@@ -48,23 +52,19 @@ export default function OrdersPage() {
     facilityQueryParam,
     statusFilter || undefined,
   );
-  const { create, approve, reject, cancel } = useOrderMutations();
+  const { create, reject, cancel } = useOrderMutations();
+
+  // ---- State Chi tiết đơn (cửa sổ) ----
+  const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
+
+  // ---- State Thanh toán (form đầy đủ + ảnh minh chứng) ----
+  const [orderToPay, setOrderToPay] = useState<PurchaseOrderData | null>(null);
 
   // ---- State Duyệt đơn ----
   const [orderToApprove, setOrderToApprove] = useState<PurchaseOrderData | null>(null);
 
-  const defaultDueDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().slice(0, 10);
-  }, []);
-  const [approvalDueDate, setApprovalDueDate] = useState('');
-
-  useEffect(() => {
-    if (orderToApprove) {
-      setApprovalDueDate(defaultDueDate);
-    }
-  }, [orderToApprove, defaultDueDate]);
+  // ---- State Nhận hàng ----
+  const [orderToReceive, setOrderToReceive] = useState<PurchaseOrderData | null>(null);
 
   // ---- Form tạo đơn ----
   const [modalOpen, setModalOpen] = useState(false);
@@ -143,7 +143,7 @@ export default function OrdersPage() {
             <button
               type="button"
               className="btn-ghost"
-              onClick={() => navigate(`/orders/${o.id}`)}
+              onClick={() => setDetailOrderId(o.id)}
               style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }}
             >
               Chi tiết
@@ -194,6 +194,44 @@ export default function OrdersPage() {
                 Từ chối
               </button>
             </>
+          )}
+
+          {can('orders', 'approve') && o.status === 'APPROVED' && (
+            <button
+              type="button"
+              onClick={() => setOrderToReceive(o)}
+              style={{
+                border: '1px solid #99f6e4',
+                background: '#f0fdfa',
+                color: '#0f766e',
+                padding: '0.2rem 0.55rem',
+                borderRadius: '4px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Nhận hàng
+            </button>
+          )}
+
+          {can('orders', 'approve') && o.status === 'RECEIVED' && (
+            <button
+              type="button"
+              onClick={() => setOrderToPay(o)}
+              style={{
+                border: '1px solid #bbf7d0',
+                background: '#f0fdf4',
+                color: '#15803d',
+                padding: '0.2rem 0.55rem',
+                borderRadius: '4px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Thanh toán
+            </button>
           )}
 
           {((o.status === 'PENDING' && can('orders', 'edit')) || (o.status === 'APPROVED' && currentUser?.role === 'ADMIN')) && (
@@ -250,6 +288,8 @@ export default function OrdersPage() {
               <option value="">Tất cả trạng thái</option>
               <option value="PENDING">Chờ duyệt</option>
               <option value="APPROVED">Đã duyệt</option>
+              <option value="RECEIVED">Đã nhận hàng</option>
+              <option value="PAID">Đã thanh toán</option>
               <option value="REJECTED">Từ chối</option>
               <option value="CANCELLED">Đã huỷ</option>
             </select>
@@ -271,7 +311,7 @@ export default function OrdersPage() {
         error={isError}
         onRowClick={(o) => {
           if (currentUser?.role === 'ADMIN' || o.status === 'PENDING') {
-            navigate(`/orders/${o.id}`);
+            setDetailOrderId(o.id);
           }
         }}
       />
@@ -480,177 +520,25 @@ export default function OrdersPage() {
         </form>
       </Modal>
 
-      {/* Modal Duyệt Đơn Hàng với đầy đủ thông tin chi tiết */}
-      <Modal
-        title={orderToApprove ? `Duyệt đơn đặt hàng #${orderToApprove.orderCode}` : 'Duyệt đơn đặt hàng'}
+      <ApproveOrderModal
+        order={orderToApprove}
         open={!!orderToApprove}
         onClose={() => setOrderToApprove(null)}
-        size="lg"
-      >
-        {orderToApprove && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            {/* Thẻ Thông tin tổng quan */}
-            <div
-              style={{
-                background: '#f8fafc',
-                padding: '1rem 1.2rem',
-                borderRadius: '10px',
-                border: '1px solid #e2e8f0',
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '0.8rem 1.5rem',
-                fontSize: '0.88rem',
-              }}
-            >
-              <div>
-                <span style={{ color: '#64748b' }}>👤 Tài khoản người đặt:</span>{' '}
-                <strong style={{ color: '#0f172a' }}>{orderToApprove.createdByName || '—'}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#64748b' }}>⏰ Ngày giờ tạo đơn:</span>{' '}
-                <strong style={{ color: '#0f172a' }}>{formatDateTime(orderToApprove.createdAt)}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#64748b' }}>🏭 Nhà cung cấp:</span>{' '}
-                <strong style={{ color: '#0f172a' }}>{orderToApprove.supplierName}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#64748b' }}>🏢 Cơ sở nhận hàng:</span>{' '}
-                <strong style={{ color: '#0f172a' }}>{orderToApprove.facilityName}</strong>
-              </div>
-              {orderToApprove.expectedDate && (
-                <div>
-                  <span style={{ color: '#64748b' }}>📅 Dự kiến nhận hàng:</span>{' '}
-                  <strong style={{ color: '#0f172a' }}>{orderToApprove.expectedDate.slice(0, 10)}</strong>
-                </div>
-              )}
-              {orderToApprove.note && (
-                <div style={{ gridColumn: 'span 2' }}>
-                  <span style={{ color: '#64748b' }}>📝 Ghi chú:</span>{' '}
-                  <span>{orderToApprove.note}</span>
-                </div>
-              )}
-            </div>
+      />
 
-            {/* Bảng chi tiết mặt hàng & số lượng */}
-            <div>
-              <h4 style={{ margin: '0 0 0.6rem 0', fontSize: '0.9rem', color: '#334155' }}>
-                DANH SÁCH MẶT HÀNG ĐẶT ({orderToApprove.items.length})
-              </h4>
-              <div className="table-wrap">
-                <table className="data-table" style={{ width: '100%' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left' }}>Tên mặt hàng</th>
-                      <th style={{ textAlign: 'center' }}>ĐVT</th>
-                      <th style={{ textAlign: 'center' }}>Số lượng</th>
-                      <th style={{ textAlign: 'right' }}>Đơn giá</th>
-                      <th style={{ textAlign: 'right' }}>Thành tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orderToApprove.items.map((item) => (
-                      <tr key={item.id}>
-                        <td data-label="Tên mặt hàng">{item.name}</td>
-                        <td data-label="ĐVT" style={{ textAlign: 'center' }}>{item.unit}</td>
-                        <td data-label="Số lượng" style={{ textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
-                        <td data-label="Đơn giá" style={{ textAlign: 'right' }}>{formatMoney(item.unitPrice)}</td>
-                        <td data-label="Thành tiền" style={{ textAlign: 'right', fontWeight: 600 }}>
-                          {formatMoney(item.quantity * item.unitPrice)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+      <ReceiveOrderModal
+        order={orderToReceive}
+        open={!!orderToReceive}
+        onClose={() => setOrderToReceive(null)}
+      />
 
-            {/* Chọn Ngày / Hạn thanh toán tiền khi Quản lý duyệt */}
-            <div
-              style={{
-                background: '#fffbeb',
-                border: '1px solid #fde68a',
-                padding: '0.85rem 1.2rem',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '1rem',
-              }}
-            >
-              <div>
-                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#92400e', display: 'block' }}>
-                  📅 NGÀY / HẠN THANH TOÁN TIỀN (QUẢN LÝ DUYỆT):
-                </span>
-                <span style={{ fontSize: '0.78rem', color: '#b45309' }}>
-                  Hạn chót thanh toán công nợ sẽ được tính từ ngày này
-                </span>
-              </div>
-              <input
-                type="date"
-                value={approvalDueDate}
-                onChange={(e) => setApprovalDueDate(e.target.value)}
-                required
-                style={{
-                  padding: '0.45rem 0.75rem',
-                  borderRadius: '6px',
-                  border: '1px solid #d97706',
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  color: '#78350f',
-                  background: '#fff',
-                }}
-              />
-            </div>
+      <PayOrderModal order={orderToPay} open={!!orderToPay} onClose={() => setOrderToPay(null)} />
 
-            {/* Tổng giá trị đơn hàng */}
-            <div
-              style={{
-                background: '#eff6ff',
-                border: '1px solid #bfdbfe',
-                padding: '0.85rem 1.2rem',
-                borderRadius: '8px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e40af' }}>
-                TỔNG GIÁ TRỊ DUYỆT ĐƠN HÀNG:
-              </span>
-              <strong style={{ fontSize: '1.25rem', color: '#1e3a8a' }}>
-                {formatMoney(orderToApprove.total)}
-              </strong>
-            </div>
-
-            {/* Form actions */}
-            <div className="form-actions" style={{ marginTop: '0.5rem' }}>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => setOrderToApprove(null)}
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
-                disabled={approve.isPending}
-                onClick={async () => {
-                  try {
-                    await approve.mutateAsync({ id: orderToApprove.id, dueDate: approvalDueDate });
-                    setOrderToApprove(null);
-                  } catch (err) {
-                    alert(err instanceof Error ? err.message : 'Duyệt đơn hàng thất bại');
-                  }
-                }}
-              >
-                {approve.isPending ? 'Đang duyệt…' : '✓ Xác nhận duyệt đơn hàng'}
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <OrderDetailModal
+        orderId={detailOrderId ?? ''}
+        open={!!detailOrderId}
+        onClose={() => setDetailOrderId(null)}
+      />
     </section>
   );
 }

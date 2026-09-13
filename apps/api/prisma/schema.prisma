@@ -26,6 +26,8 @@ enum EntityStatus {
 enum OrderStatus {
   PENDING
   APPROVED
+  RECEIVED
+  PAID
   REJECTED
   CANCELLED
 }
@@ -139,10 +141,16 @@ model PurchaseOrder {
   createdBy       String      @map("created_by")
   reviewedBy      String?     @map("reviewed_by")
   reviewedAt      DateTime?   @map("reviewed_at")
+  receivedBy      String?     @map("received_by")
+  receivedAt      DateTime?   @map("received_at")
+  paidBy          String?     @map("paid_by")
+  paidAt          DateTime?   @map("paid_at")
   rejectReason    String?     @map("reject_reason")
   resultReceiptId String?     @map("result_receipt_id")
   resultPayableId String?     @map("result_payable_id")
   createdAt       DateTime    @default(now()) @map("created_at")
+  deletedAt       DateTime?   @map("deleted_at")
+  deletedBy       String?     @map("deleted_by")
 
   supplier Supplier    @relation(fields: [supplierId], references: [id])
   facility Facility    @relation(fields: [facilityId], references: [id])
@@ -180,6 +188,8 @@ model PurchaseReceipt {
   createdBy           String        @map("created_by")
   confirmedBy         String?       @map("confirmed_by")
   createdAt           DateTime      @default(now()) @map("created_at")
+  deletedAt           DateTime?     @map("deleted_at")
+  deletedBy           String?       @map("deleted_by")
 
   supplier Supplier      @relation(fields: [supplierId], references: [id])
   facility Facility      @relation(fields: [facilityId], references: [id])
@@ -215,6 +225,8 @@ model Payable {
   note              String?
   createdBy         String    @map("created_by")
   createdAt         DateTime  @default(now()) @map("created_at")
+  deletedAt         DateTime? @map("deleted_at")
+  deletedBy         String?   @map("deleted_by")
 
   supplier Supplier         @relation(fields: [supplierId], references: [id])
   receipt  PurchaseReceipt? @relation(fields: [purchaseReceiptId], references: [id])

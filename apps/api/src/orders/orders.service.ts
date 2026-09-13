@@ -6,13 +6,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { ApproveOrderResult, PurchaseOrderData } from '@debtflow/shared';
+import type { PurchaseOrderData, ReceiveOrderResult } from '@debtflow/shared';
 import { RequestUser } from '../auth/jwt.constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { purchaseTotals } from '../domain';
+import { invoiceBalance, purchaseTotals } from '../domain';
 import { nextOrderCode, nextReceiptCode } from '../common/codes';
-import { CreateOrderDto, RejectOrderDto, UpdateOrderDto } from './dto/order.dto';
+import { PayOrderDto, CreateOrderDto, RejectOrderDto, UpdateOrderDto } from './dto/order.dto';
 
 /** Công nợ mặc định đáo hạn sau 30 ngày kể từ ngày duyệt. */
 const DEFAULT_DUE_DAYS = 30;
@@ -40,6 +40,7 @@ export class OrdersService {
       where: {
         facilityId: facilityWhere,
         status: (filter.status as Prisma.EnumOrderStatusFilter['equals']) || undefined,
+        deletedAt: null,
       },
       include: ORDER_INCLUDE,
       orderBy: { createdAt: 'desc' },
@@ -48,13 +49,16 @@ export class OrdersService {
   }
 
   async findOne(id: string, user?: RequestUser): Promise<PurchaseOrderData> {
-    const order = await this.prisma.purchaseOrder.findUnique({
-      where: { id },
+    const order = await this.prisma.purchaseOrder.findFirst({
+      where: { id, deletedAt: null },
       include: ORDER_INCLUDE,
     });
     if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
 
-    if (user?.role !== 'ADMIN' && order.status === 'APPROVED') {
+    if (
+      user?.role !== 'ADMIN' &&
+      (order.status === 'APPROVED' || order.status === 'RECEIVED' || order.status === 'PAID')
+    ) {
       throw new ForbiddenException('Đơn hàng đã được duyệt. Nhân viên không được phép xem chi tiết.');
     }
 
@@ -63,7 +67,7 @@ export class OrdersService {
 
   /** Số đơn PENDING — badge sidebar admin. */
   async pendingCount(): Promise<{ count: number }> {
-    const count = await this.prisma.purchaseOrder.count({ where: { status: 'PENDING' } });
+    const count = await this.prisma.purchaseOrder.count({ where: { status: 'PENDING', deletedAt: null } });
     return { count };
   }
 
@@ -131,14 +135,47 @@ export class OrdersService {
   }
 
   /**
-   * DUYỆT ĐƠN — TRỌN VẸN TRONG 1 TRANSACTION:
-   * khoá dòng → kiểm PENDING → sinh Receipt(CONFIRMED) → sinh Payable
-   * → cập nhật order → ghi audit. Lỗi bất kỳ ⇒ rollback toàn bộ.
+   * DUYỆT ĐƠN: PENDING → APPROVED. KHÔNG sinh phiếu nhập/công nợ ở bước này nữa
+   * (công nợ chỉ phát sinh khi "Đã nhận hàng"). Chỉ đổi trạng thái + lưu vết.
    */
-  async approve(id: string, approverId: string, customDueDate?: string): Promise<ApproveOrderResult> {
+  async approve(id: string, approverId: string): Promise<PurchaseOrderData> {
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM purchase_orders WHERE id = ${id} FOR UPDATE`;
+      const order = await tx.purchaseOrder.findUnique({ where: { id }, select: { status: true, orderCode: true } });
+      if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
+      if (order.status !== 'PENDING') {
+        throw new ConflictException(`Chỉ duyệt được đơn PENDING (hiện tại: ${order.status})`);
+      }
+
+      const result = await tx.purchaseOrder.update({
+        where: { id },
+        data: { status: 'APPROVED', reviewedBy: approverId, reviewedAt: new Date() },
+        include: ORDER_INCLUDE,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: approverId,
+          action: 'APPROVE_ORDER',
+          entityType: 'ORDER',
+          entityId: id,
+          detail: `Duyệt đơn ${order.orderCode}`,
+        },
+      });
+      return result;
+    });
+    return this.serialize(updated);
+  }
+
+  /**
+   * NHẬN HÀNG — TRỌN VẸN TRONG 1 TRANSACTION:
+   * khoá dòng → kiểm APPROVED → sinh Receipt(CONFIRMED) → sinh Payable (công nợ)
+   * → cập nhật order (RECEIVED) → ghi audit. Lỗi bất kỳ ⇒ rollback toàn bộ.
+   */
+  async receive(id: string, receiverId: string, customDueDate?: string): Promise<ReceiveOrderResult> {
     try {
       const result = await this.prisma.$transaction(async (tx) => {
-        // Khoá dòng chống duyệt đồng thời.
+        // Khoá dòng chống nhận hàng đồng thời.
         await tx.$queryRaw`SELECT id FROM purchase_orders WHERE id = ${id} FOR UPDATE`;
 
         const order = await tx.purchaseOrder.findUnique({
@@ -146,8 +183,8 @@ export class OrdersService {
           include: { items: true },
         });
         if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
-        if (order.status !== 'PENDING') {
-          throw new ConflictException(`Chỉ duyệt được đơn PENDING (hiện tại: ${order.status})`);
+        if (order.status !== 'APPROVED') {
+          throw new ConflictException(`Chỉ nhận hàng được đơn ĐÃ DUYỆT (hiện tại: ${order.status})`);
         }
 
         const now = new Date();
@@ -168,8 +205,8 @@ export class OrdersService {
             dueDate,
             status: 'CONFIRMED',
             note: `Sinh từ đơn ${order.orderCode}`,
-            createdBy: approverId,
-            confirmedBy: approverId,
+            createdBy: receiverId,
+            confirmedBy: receiverId,
             items: {
               create: order.items.map((i) => ({
                 itemName: i.name,
@@ -190,16 +227,16 @@ export class OrdersService {
             dueDate,
             totalAmount: totals.grandTotal,
             description: `Công nợ từ đơn ${order.orderCode}`,
-            createdBy: approverId,
+            createdBy: receiverId,
           },
         });
 
         const updated = await tx.purchaseOrder.update({
           where: { id },
           data: {
-            status: 'APPROVED',
-            reviewedBy: approverId,
-            reviewedAt: now,
+            status: 'RECEIVED',
+            receivedBy: receiverId,
+            receivedAt: now,
             resultReceiptId: receipt.id,
             resultPayableId: payable.id,
           },
@@ -208,11 +245,11 @@ export class OrdersService {
 
         await tx.auditLog.create({
           data: {
-            userId: approverId,
-            action: 'APPROVE_ORDER',
+            userId: receiverId,
+            action: 'RECEIVE_ORDER',
             entityType: 'ORDER',
             entityId: id,
-            detail: `Duyệt đơn ${order.orderCode} → phiếu nhập ${receiptCode} + công nợ ${totals.grandTotal.toLocaleString('vi-VN')}đ`,
+            detail: `Nhận hàng đơn ${order.orderCode} → phiếu nhập ${receiptCode} + công nợ ${totals.grandTotal.toLocaleString('vi-VN')}đ`,
           },
         });
 
@@ -240,6 +277,73 @@ export class OrdersService {
       }
       throw e;
     }
+  }
+
+  /**
+   * THANH TOÁN TRỌN CẢ ĐƠN: RECEIVED → PAID.
+   * Sinh 1 khoản chi = số dư công nợ còn lại → công nợ về 0 (rời danh sách còn nợ).
+   */
+  async pay(id: string, payerId: string, input?: PayOrderDto): Promise<PurchaseOrderData> {
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM purchase_orders WHERE id = ${id} FOR UPDATE`;
+      const order = await tx.purchaseOrder.findUnique({
+        where: { id },
+        select: { status: true, orderCode: true, resultPayableId: true },
+      });
+      if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
+      if (order.status !== 'RECEIVED') {
+        throw new ConflictException(`Chỉ thanh toán được đơn ĐÃ NHẬN HÀNG (hiện tại: ${order.status})`);
+      }
+      if (!order.resultPayableId) {
+        throw new ConflictException('Đơn chưa có công nợ để thanh toán');
+      }
+
+      const payable = await tx.payable.findUnique({
+        where: { id: order.resultPayableId },
+        include: { payments: true },
+      });
+      if (!payable) throw new NotFoundException('Không tìm thấy công nợ của đơn');
+
+      const balance = invoiceBalance(
+        Number(payable.totalAmount),
+        payable.payments.map((p) => ({ amount: Number(p.amount), status: p.status })),
+      );
+
+      const now = new Date();
+      if (balance > 0) {
+        await tx.payment.create({
+          data: {
+            direction: 'PAYABLE',
+            payableId: payable.id,
+            amount: balance,
+            paymentDate: input?.paymentDate ? new Date(input.paymentDate) : now,
+            paymentMethod: input?.paymentMethod ?? null,
+            transactionCode: input?.transactionCode ?? null,
+            proofUrl: input?.proofUrl ?? null,
+            note: input?.note ?? `Thanh toán trọn đơn ${order.orderCode}`,
+            createdBy: payerId,
+          },
+        });
+      }
+
+      const result = await tx.purchaseOrder.update({
+        where: { id },
+        data: { status: 'PAID', paidBy: payerId, paidAt: now },
+        include: ORDER_INCLUDE,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: payerId,
+          action: 'PAY_ORDER',
+          entityType: 'ORDER',
+          entityId: id,
+          detail: `Thanh toán trọn đơn ${order.orderCode}: ${balance.toLocaleString('vi-VN')}đ`,
+        },
+      });
+      return result;
+    });
+    return this.serialize(updated);
   }
 
   /** Từ chối: PENDING → REJECTED kèm lý do. */
@@ -282,9 +386,13 @@ export class OrdersService {
     if (existing.status === 'REJECTED' || existing.status === 'CANCELLED') {
       throw new BadRequestException('Không thể chỉnh sửa đơn hàng đã bị từ chối hoặc huỷ');
     }
+    if (existing.status === 'PAID') {
+      throw new BadRequestException('Đơn đã thanh toán — không thể chỉnh sửa');
+    }
 
-    if (existing.status === 'APPROVED' && user.role !== 'ADMIN') {
-      throw new ForbiddenException('Chỉ Admin mới có quyền chỉnh sửa đơn hàng đã duyệt');
+    const isAdmin = user.role === 'ADMIN';
+    if ((existing.status === 'APPROVED' || existing.status === 'RECEIVED') && !isAdmin) {
+      throw new ForbiddenException('Chỉ Admin mới có quyền chỉnh sửa đơn hàng đã duyệt/đã nhận hàng');
     }
 
     // Snapshot mặt hàng từ danh mục NCC
@@ -301,22 +409,44 @@ export class OrdersService {
       }
     }
 
+    // Đơn giá mỗi dòng: Admin truyền unitPrice ⇒ dùng giá mới (đồng thời ghi đè danh mục NCC);
+    // ngược lại snapshot giá hiện tại trong danh mục.
+    const resolvedItems = dto.items.map((i) => {
+      const p = productMap.get(i.productId)!;
+      const override = isAdmin && i.unitPrice !== undefined && i.unitPrice !== null;
+      return {
+        product: p,
+        name: p.name,
+        unit: p.unit,
+        unitPrice: override ? Number(i.unitPrice) : Number(p.price),
+        quantity: i.quantity,
+        override,
+      };
+    });
+
     const updatedOrder = await this.prisma.$transaction(async (tx) => {
+      // 0. Admin sửa giá ⇒ ghi đè giá trong danh mục NCC (đơn mới sau này lấy giá mới).
+      for (const it of resolvedItems) {
+        if (it.override && Number(it.product.price) !== it.unitPrice) {
+          await tx.supplierProduct.update({
+            where: { id: it.product.id },
+            data: { price: it.unitPrice },
+          });
+        }
+      }
+
       // 1. Xóa các dòng hàng cũ và tạo dòng mới
       await tx.orderItem.deleteMany({ where: { orderId: id } });
-
-      const newItemsData = dto.items.map((i) => {
-        const p = productMap.get(i.productId)!;
-        return {
+      await tx.orderItem.createMany({
+        data: resolvedItems.map((it) => ({
           orderId: id,
-          productId: p.id,
-          name: p.name,
-          unit: p.unit,
-          unitPrice: p.price,
-          quantity: i.quantity,
-        };
+          productId: it.product.id,
+          name: it.name,
+          unit: it.unit,
+          unitPrice: it.unitPrice,
+          quantity: it.quantity,
+        })),
       });
-      await tx.orderItem.createMany({ data: newItemsData });
 
       // 2. Cập nhật thông tin đơn hàng
       const order = await tx.purchaseOrder.update({
@@ -332,27 +462,25 @@ export class OrdersService {
         order.items.map((i) => ({ quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) })),
       );
 
-      // 3. Nếu đơn đã APPROVED: Cập nhật lại Phiếu nhập (Receipt) & Công nợ (Payable)
-      if (existing.status === 'APPROVED') {
-        if (existing.resultReceiptId) {
-          await tx.receiptItem.deleteMany({ where: { receiptId: existing.resultReceiptId } });
-          await tx.receiptItem.createMany({
-            data: order.items.map((i) => ({
-              receiptId: existing.resultReceiptId!,
-              itemName: i.name,
-              unit: i.unit,
-              quantity: i.quantity,
-              unitPrice: i.unitPrice,
-            })),
-          });
-        }
+      // 3. Nếu đơn đã có phiếu nhập + công nợ (RECEIVED, hoặc dữ liệu cũ) → resync theo giá/số lượng mới.
+      if (existing.resultReceiptId) {
+        await tx.receiptItem.deleteMany({ where: { receiptId: existing.resultReceiptId } });
+        await tx.receiptItem.createMany({
+          data: order.items.map((i) => ({
+            receiptId: existing.resultReceiptId!,
+            itemName: i.name,
+            unit: i.unit,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+          })),
+        });
+      }
 
-        if (existing.resultPayableId) {
-          await tx.payable.update({
-            where: { id: existing.resultPayableId },
-            data: { totalAmount: totals.grandTotal },
-          });
-        }
+      if (existing.resultPayableId) {
+        await tx.payable.update({
+          where: { id: existing.resultPayableId },
+          data: { totalAmount: totals.grandTotal },
+        });
       }
 
       await tx.auditLog.create({
@@ -369,6 +497,68 @@ export class OrdersService {
     });
 
     return this.serialize(updatedOrder);
+  }
+
+  /**
+   * XÓA ĐƠN (soft-delete) — CHỈ ADMIN.
+   * Đánh dấu deletedAt/deletedBy cho đơn + phiếu nhập + công nợ liên kết (nếu có)
+   * ⇒ biến mất khỏi danh sách, báo cáo/thống kê, công nợ. Không xóa cứng.
+   */
+  async remove(id: string, user: RequestUser): Promise<{ id: string }> {
+    if (user.role !== 'ADMIN') {
+      throw new ForbiddenException('Chỉ Admin mới có quyền xóa đơn hàng');
+    }
+
+    const order = await this.prisma.purchaseOrder.findFirst({
+      where: { id, deletedAt: null },
+      include: { items: true },
+    });
+    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM purchase_orders WHERE id = ${id} FOR UPDATE`;
+      const now = new Date();
+
+      await tx.purchaseOrder.update({
+        where: { id },
+        data: { deletedAt: now, deletedBy: user.id },
+      });
+
+      if (order.resultReceiptId) {
+        await tx.purchaseReceipt.update({
+          where: { id: order.resultReceiptId },
+          data: { deletedAt: now, deletedBy: user.id },
+        });
+      }
+      if (order.resultPayableId) {
+        await tx.payable.update({
+          where: { id: order.resultPayableId },
+          data: { deletedAt: now, deletedBy: user.id },
+        });
+      }
+
+      const total = purchaseTotals(
+        order.items.map((i) => ({ quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) })),
+      ).grandTotal;
+      const linked = [
+        order.resultReceiptId ? 'phiếu nhập' : null,
+        order.resultPayableId ? 'công nợ' : null,
+      ].filter(Boolean);
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'DELETE_ORDER',
+          entityType: 'ORDER',
+          entityId: id,
+          detail: `Xóa đơn ${order.orderCode} (${order.status}), tổng ${total.toLocaleString('vi-VN')}đ${
+            linked.length ? ` — kèm ${linked.join(' + ')}` : ''
+          }`,
+        },
+      });
+    });
+
+    return { id };
   }
 
   // ---- Helpers ----
@@ -450,6 +640,8 @@ export class OrdersService {
       createdByName: creator?.name ?? null,
       reviewedBy: order.reviewedBy,
       reviewedAt: order.reviewedAt?.toISOString() ?? null,
+      receivedAt: order.receivedAt?.toISOString() ?? null,
+      paidAt: order.paidAt?.toISOString() ?? null,
       rejectReason: order.rejectReason,
       resultReceiptId: order.resultReceiptId,
       resultReceiptCode,

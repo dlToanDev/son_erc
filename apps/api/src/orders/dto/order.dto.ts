@@ -21,6 +21,15 @@ export class OrderItemDto {
   @IsNumber()
   @Min(0.001, { message: 'Số lượng phải lớn hơn 0' })
   quantity!: number;
+
+  /**
+   * Đơn giá do Admin sửa (khi NCC báo tăng giá). Chỉ Admin được truyền;
+   * nếu có, ghi vào đơn + danh mục NCC. Bỏ trống ⇒ snapshot giá từ danh mục.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(0, { message: 'Đơn giá không hợp lệ' })
+  unitPrice?: number;
 }
 
 export class CreateOrderDto {
@@ -59,6 +68,39 @@ export class ApproveOrderDto {
   @IsOptional()
   @IsDateString()
   dueDate?: string;
+}
+
+/** Nhận hàng: sinh phiếu nhập + công nợ. Hạn thanh toán nhập ở bước này. */
+export class ReceiveOrderDto {
+  @IsOptional()
+  @IsDateString()
+  dueDate?: string;
+}
+
+/** Thanh toán trọn cả đơn: sinh 1 khoản chi = số nợ còn lại. */
+export class PayOrderDto {
+  @IsOptional()
+  @IsDateString()
+  paymentDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  paymentMethod?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  transactionCode?: string;
+
+  @IsOptional()
+  @IsString()
+  proofUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
 }
 
 export class UpdateOrderDto {

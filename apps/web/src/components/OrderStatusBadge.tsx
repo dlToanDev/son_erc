@@ -2,7 +2,9 @@ import type { OrderStatusValue } from '@debtflow/shared';
 
 const CONFIG: Record<OrderStatusValue, { label: string; cls: string }> = {
   PENDING: { label: 'Chờ duyệt', cls: 'badge-warning' },
-  APPROVED: { label: 'Đã duyệt', cls: 'badge-success' },
+  APPROVED: { label: 'Đã duyệt', cls: 'badge-primary' },
+  RECEIVED: { label: 'Đã nhận hàng', cls: 'badge-info' },
+  PAID: { label: 'Đã thanh toán', cls: 'badge-success' },
   REJECTED: { label: 'Từ chối', cls: 'badge-danger' },
   CANCELLED: { label: 'Đã huỷ', cls: 'badge-muted' },
 };

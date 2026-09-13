@@ -545,6 +545,11 @@ button {
   color: #64748b;
 }
 
+.badge-info {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
 .text-danger {
   color: var(--df-danger);
   font-weight: 700;
@@ -1746,4 +1751,64 @@ button {
   display: flex;
   align-items: center;
   gap: 1.25rem;
+}
+
+/* ==== Trình sửa mặt hàng của đơn (Duyệt / Nhận hàng / Chỉnh sửa) ==== */
+.responsive-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.order-edit-header,
+.order-edit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(52px, 0.7fr) 40px;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Biến thể không có cột đơn giá (nhân viên sửa đơn PENDING) */
+.order-edit--np .order-edit-header,
+.order-edit--np .order-edit-row {
+  grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr) minmax(52px, 0.7fr) 40px;
+}
+
+.order-edit-header {
+  padding: 0 0.15rem 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.order-edit-row > * {
+  min-width: 0;
+}
+
+/* Điện thoại: mỗi mặt hàng thành 1 thẻ 2 cột, ẩn header */
+@media (max-width: 640px) {
+  .responsive-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-edit-header {
+    display: none;
+  }
+
+  .order-edit-row,
+  .order-edit--np .order-edit-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 0.6rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.7rem;
+  }
+
+  /* Ô chọn mặt hàng chiếm trọn hàng đầu tiên */
+  .order-edit-row > :first-child {
+    grid-column: 1 / -1;
+  }
 }

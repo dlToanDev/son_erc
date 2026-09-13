@@ -1,11 +1,17 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionGuard } from '../auth/guards/permission.guard';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { RequestUser } from '../auth/jwt.constants';
 import { OrdersService } from './orders.service';
-import { ApproveOrderDto, CreateOrderDto, RejectOrderDto, UpdateOrderDto } from './dto/order.dto';
+import {
+  CreateOrderDto,
+  PayOrderDto,
+  ReceiveOrderDto,
+  RejectOrderDto,
+  UpdateOrderDto,
+} from './dto/order.dto';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard, PermissionGuard)
@@ -39,12 +45,26 @@ export class OrdersController {
 
   @Post(':id/approve')
   @RequirePermission('orders', 'approve')
-  approve(
+  approve(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.orders.approve(id, user.id);
+  }
+
+  /** Nhận hàng: sinh phiếu nhập + công nợ. */
+  @Post(':id/receive')
+  @RequirePermission('orders', 'approve')
+  receive(
     @Param('id') id: string,
-    @Body() dto: ApproveOrderDto,
+    @Body() dto: ReceiveOrderDto,
     @CurrentUser() user: RequestUser,
   ) {
-    return this.orders.approve(id, user.id, dto?.dueDate);
+    return this.orders.receive(id, user.id, dto?.dueDate);
+  }
+
+  /** Thanh toán trọn cả đơn. */
+  @Post(':id/pay')
+  @RequirePermission('orders', 'approve')
+  pay(@Param('id') id: string, @Body() dto: PayOrderDto, @CurrentUser() user: RequestUser) {
+    return this.orders.pay(id, user.id, dto);
   }
 
   @Post(':id/reject')
@@ -67,5 +87,12 @@ export class OrdersController {
     @CurrentUser() user: RequestUser,
   ) {
     return this.orders.update(id, dto, user);
+  }
+
+  /** Xóa đơn (soft-delete) — chỉ Admin (kiểm quyền trong service). */
+  @Delete(':id')
+  @RequirePermission('orders', 'edit')
+  remove(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.orders.remove(id, user);
   }
 }

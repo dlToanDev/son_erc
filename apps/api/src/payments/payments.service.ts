@@ -29,7 +29,9 @@ export class PaymentsService {
     const payments = await this.prisma.payment.findMany({
       where: {
         payableId: filter.payableId || undefined,
-        payable: filter.supplierId ? { supplierId: filter.supplierId } : undefined,
+        payable: filter.supplierId
+          ? { supplierId: filter.supplierId, deletedAt: null }
+          : { deletedAt: null },
       },
       include: PAYMENT_INCLUDE,
       orderBy: { createdAt: 'desc' },

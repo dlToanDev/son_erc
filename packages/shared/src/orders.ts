@@ -1,6 +1,12 @@
 // Types đặt hàng dùng chung FE + BE (Phase 4).
 
-export type OrderStatusValue = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type OrderStatusValue =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'RECEIVED'
+  | 'PAID'
+  | 'REJECTED'
+  | 'CANCELLED';
 
 export interface OrderItemData {
   id: string;
@@ -25,6 +31,8 @@ export interface PurchaseOrderData {
   createdByName: string | null;
   reviewedBy: string | null;
   reviewedAt: string | null;
+  receivedAt: string | null;
+  paidAt: string | null;
   rejectReason: string | null;
   resultReceiptId: string | null;
   resultReceiptCode?: string | null;
@@ -35,8 +43,11 @@ export interface PurchaseOrderData {
   total: number; // sum(quantity × unitPrice)
 }
 
-/** Kết quả duyệt đơn — trả trọn bộ từ 1 transaction. */
-export interface ApproveOrderResult {
+/**
+ * Kết quả NHẬN HÀNG — sinh phiếu nhập + công nợ trong 1 transaction.
+ * (Duyệt đơn không còn sinh công nợ; xem OrdersService.receive.)
+ */
+export interface ReceiveOrderResult {
   order: PurchaseOrderData;
   receipt: { id: string; receiptCode: string; status: string; totalAmount: number };
   payable: { id: string; invoiceCode: string; totalAmount: number; dueDate: string | null };

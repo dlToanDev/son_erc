@@ -41,6 +41,7 @@ export class ReceiptsService {
         supplierId: filter.supplierId || undefined,
         facilityId: facilityWhere,
         status: (filter.status as 'DRAFT' | 'CONFIRMED') || undefined,
+        deletedAt: null,
       },
       include: RECEIPT_INCLUDE,
       orderBy: { createdAt: 'desc' },
@@ -49,8 +50,8 @@ export class ReceiptsService {
   }
 
   async findOne(id: string): Promise<ReceiptData> {
-    const receipt = await this.prisma.purchaseReceipt.findUnique({
-      where: { id },
+    const receipt = await this.prisma.purchaseReceipt.findFirst({
+      where: { id, deletedAt: null },
       include: RECEIPT_INCLUDE,
     });
     if (!receipt) throw new NotFoundException('Không tìm thấy phiếu nhập');

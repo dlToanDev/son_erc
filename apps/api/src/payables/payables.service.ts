@@ -24,7 +24,7 @@ export class PayablesService {
   /** Danh sách công nợ — balance & status TÍNH RUNTIME (không lưu cứng). */
   async findAll(filter: { supplierId?: string; status?: string }): Promise<PayableData[]> {
     const payables = await this.prisma.payable.findMany({
-      where: { supplierId: filter.supplierId || undefined },
+      where: { supplierId: filter.supplierId || undefined, deletedAt: null },
       include: PAYABLE_INCLUDE,
       orderBy: { invoiceDate: 'desc' },
     });
@@ -34,8 +34,8 @@ export class PayablesService {
   }
 
   async findOne(id: string): Promise<PayableDetail> {
-    const payable = await this.prisma.payable.findUnique({
-      where: { id },
+    const payable = await this.prisma.payable.findFirst({
+      where: { id, deletedAt: null },
       include: PAYABLE_INCLUDE,
     });
     if (!payable) throw new NotFoundException('Không tìm thấy công nợ');

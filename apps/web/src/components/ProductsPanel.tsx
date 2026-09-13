@@ -375,7 +375,7 @@ export default function ProductsPanel({ supplierId }: { supplierId: string }) {
             <input
               type="number"
               min="0"
-              step="1000"
+              step="any"
               value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })}
               required
