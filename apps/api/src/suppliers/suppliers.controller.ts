@@ -74,6 +74,13 @@ export class SuppliersController {
     return this.suppliers.updateProduct(id, productId, dto, user.id);
   }
 
+  /** Lịch sử biến động giá của 1 mặt hàng. */
+  @Get(':id/products/:productId/price-history')
+  @RequirePermission('products', 'view')
+  priceHistory(@Param('id') id: string, @Param('productId') productId: string) {
+    return this.suppliers.getPriceHistory(id, productId);
+  }
+
   @Delete(':id/products/:productId')
   @RequirePermission('products', 'edit')
   deleteProduct(

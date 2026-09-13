@@ -1,6 +1,11 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { Supplier, SupplierProduct, SupplierWithTotals } from '@debtflow/shared';
+import type {
+  PriceHistoryEntry,
+  Supplier,
+  SupplierProduct,
+  SupplierWithTotals,
+} from '@debtflow/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { invoiceBalance, invoiceStatus } from '../domain';
@@ -135,18 +140,67 @@ export class SuppliersService {
     });
     if (!existing) throw new NotFoundException('Không tìm thấy mặt hàng');
 
-    const product = await this.prisma.supplierProduct.update({
-      where: { id: productId },
-      data: dto,
+    const priceChanged = dto.price !== undefined && Number(dto.price) !== Number(existing.price);
+
+    const product = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.supplierProduct.update({
+        where: { id: productId },
+        data: dto,
+      });
+      if (priceChanged) {
+        await tx.supplierProductPriceHistory.create({
+          data: {
+            supplierProductId: productId,
+            oldPrice: existing.price,
+            newPrice: updated.price,
+            source: 'CATALOG',
+            changedBy: userId,
+          },
+        });
+      }
+      return updated;
     });
+
     await this.audit.log({
       userId,
       action: 'UPDATE_PRODUCT',
       entityType: 'PRODUCT',
       entityId: productId,
-      detail: `Cập nhật mặt hàng "${product.name}"`,
+      detail: priceChanged
+        ? `Cập nhật mặt hàng "${product.name}" — giá ${Number(existing.price).toLocaleString('vi-VN')}đ → ${Number(product.price).toLocaleString('vi-VN')}đ`
+        : `Cập nhật mặt hàng "${product.name}"`,
     });
     return { ...product, price: Number(product.price) };
+  }
+
+  /** Lịch sử biến động giá của 1 mặt hàng (mới nhất trước). */
+  async getPriceHistory(supplierId: string, productId: string): Promise<PriceHistoryEntry[]> {
+    const product = await this.prisma.supplierProduct.findFirst({
+      where: { id: productId, supplierId },
+      select: { id: true },
+    });
+    if (!product) throw new NotFoundException('Không tìm thấy mặt hàng');
+
+    const rows = await this.prisma.supplierProductPriceHistory.findMany({
+      where: { supplierProductId: productId },
+      orderBy: { createdAt: 'desc' },
+    });
+    const userIds = [...new Set(rows.map((r) => r.changedBy))];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true },
+    });
+    const nameMap = new Map(users.map((u) => [u.id, u.name]));
+
+    return rows.map((r) => ({
+      id: r.id,
+      oldPrice: Number(r.oldPrice),
+      newPrice: Number(r.newPrice),
+      source: r.source,
+      changedBy: r.changedBy,
+      changedByName: nameMap.get(r.changedBy) ?? null,
+      createdAt: r.createdAt.toISOString(),
+    }));
   }
 
   async deleteProduct(

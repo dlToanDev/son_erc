@@ -36,6 +36,13 @@ export class ReportsController {
     return this.reports.stats(range as RangeValue, facilityId, from, to);
   }
 
+  /** Tuổi nợ (AP Aging) theo NCC + dự báo dòng tiền phải trả. */
+  @Get('payables-aging')
+  @RequirePermission('reports', 'view')
+  payablesAging() {
+    return this.reports.payablesAging();
+  }
+
   /** So sánh chi phí nhập 2 kỳ. */
   @Get('compare')
   @RequirePermission('reports', 'view')

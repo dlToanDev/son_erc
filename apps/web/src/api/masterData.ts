@@ -1,6 +1,7 @@
 import type {
   Facility,
   PermissionEntry,
+  PriceHistoryEntry,
   SettingsData,
   Supplier,
   SupplierProduct,
@@ -46,6 +47,8 @@ export const updateProduct = (
 ) => apiPatch<SupplierProduct>(`/suppliers/${supplierId}/products/${productId}`, body);
 export const deleteProduct = (supplierId: string, productId: string) =>
   apiDelete<{ success: boolean }>(`/suppliers/${supplierId}/products/${productId}`);
+export const getPriceHistory = (supplierId: string, productId: string) =>
+  apiGet<PriceHistoryEntry[]>(`/suppliers/${supplierId}/products/${productId}/price-history`);
 
 // ---- Users ----
 export type UserWithPermissions = UserSummary & { permissions: PermissionEntry[] };

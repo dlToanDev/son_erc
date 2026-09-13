@@ -88,3 +88,31 @@ export interface DebtAlertCounts {
   overdueCount: number;
   upcomingCount: number; // WARNING + CRITICAL
 }
+
+// ---- Tuổi nợ (AP Aging) + Dự báo dòng tiền ----
+
+export interface AgingRow {
+  supplierId: string;
+  supplierName: string;
+  current: number; // chưa đến hạn
+  d1_30: number; // quá hạn 1–30 ngày
+  d31_60: number;
+  d61_90: number;
+  d90plus: number; // quá hạn > 90 ngày
+  total: number;
+}
+
+export type AgingTotals = Omit<AgingRow, 'supplierId' | 'supplierName'>;
+
+export interface CashflowBucket {
+  key: 'overdue' | 'week1' | 'week2' | 'month' | 'later';
+  label: string;
+  amount: number;
+  count: number;
+}
+
+export interface PayablesAgingData {
+  asOf: string; // 'YYYY-MM-DD'
+  aging: { rows: AgingRow[]; totals: AgingTotals };
+  cashflow: CashflowBucket[];
+}

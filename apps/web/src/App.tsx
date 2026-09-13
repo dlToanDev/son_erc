@@ -12,6 +12,7 @@ import PaymentsPage from './pages/PaymentsPage';
 import InventoryPage from './pages/InventoryPage';
 import StatsPage from './pages/StatsPage';
 import ComparePage from './pages/ComparePage';
+import AgingPage from './pages/AgingPage';
 import AuditLogPage from './pages/AuditLogPage';
 import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/compare" element={<ComparePage />} />
+          <Route path="/reports/aging" element={<AgingPage />} />
           <Route path="/audit" element={<AuditLogPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/settings" element={<SettingsPage />} />

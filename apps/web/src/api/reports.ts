@@ -1,4 +1,11 @@
-import type { CompareData, DashboardData, DebtAlertCounts, RangeValue, StatsData } from '@debtflow/shared';
+import type {
+  CompareData,
+  DashboardData,
+  DebtAlertCounts,
+  PayablesAgingData,
+  RangeValue,
+  StatsData,
+} from '@debtflow/shared';
 import { apiGet } from './client';
 
 const qs = (params: Record<string, string | undefined>) => {
@@ -20,3 +27,5 @@ export const getCompare = (
   periods: { fromA: string; toA: string; fromB: string; toB: string },
   facilityId?: string,
 ) => apiGet<CompareData>(`/reports/compare${qs({ ...periods, facilityId })}`);
+
+export const getPayablesAging = () => apiGet<PayablesAgingData>('/reports/payables-aging');

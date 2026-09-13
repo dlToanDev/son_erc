@@ -2,9 +2,9 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { SupplierProduct } from '@debtflow/shared';
 import DataTable, { Column } from './DataTable';
 import Modal from './Modal';
-import { useProductMutations, useProducts, useSuppliers, keys } from '../hooks/queries';
+import { useProductMutations, useProducts, useSuppliers, usePriceHistory, keys } from '../hooks/queries';
 import { useAuthStore } from '../store/auth';
-import { formatMoney } from '../utils/format';
+import { formatMoney, formatDateTime } from '../utils/format';
 import { getUnits } from '../utils/units';
 import { useQueryClient, useQueries } from '@tanstack/react-query';
 import { createProduct, listProducts } from '../api/masterData';
@@ -55,6 +55,14 @@ export default function ProductsPanel({ supplierId }: { supplierId: string }) {
   // Modal form state
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SupplierProduct | null>(null);
+
+  // Modal lịch sử giá
+  const [historyProduct, setHistoryProduct] = useState<SupplierProduct | null>(null);
+  const { data: priceHistory = [], isLoading: historyLoading } = usePriceHistory(
+    historyProduct?.supplierId ?? '',
+    historyProduct?.id ?? '',
+    !!historyProduct,
+  );
   const [selectedSupplierId, setSelectedSupplierId] = useState(defaultSupplierId);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
@@ -178,45 +186,59 @@ export default function ProductsPanel({ supplierId }: { supplierId: string }) {
       key: 'actions',
       header: 'Thao tác',
       align: 'center',
-      width: '155px',
-      render: (p) =>
-        can('products', 'edit') && (
-          <div className="btn-action-group">
-            <button
-              type="button"
-              className="btn-action-edit"
-              onClick={() => openEdit(p)}
-              title="Sửa mặt hàng"
-            >
-              Sửa
-            </button>
-            <button
-              type="button"
-              className={p.status === 'ACTIVE' ? 'btn-action-toggle-hide' : 'btn-action-toggle-show'}
-              onClick={() => {
-                update.mutate({
-                  productId: p.id,
-                  status: p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
-                });
-                qc.invalidateQueries({ queryKey: keys.products(p.supplierId) });
-              }}
-              title={p.status === 'ACTIVE' ? 'Ẩn mặt hàng' : 'Hiện mặt hàng'}
-            >
-              {p.status === 'ACTIVE' ? 'Ẩn' : 'Hiện'}
-            </button>
-            <button
-              type="button"
-              className="btn-action-delete"
-              onClick={() => handleDelete(p)}
-              disabled={remove.isPending}
-              title="Xoá mặt hàng"
-            >
-              Xoá
-            </button>
-          </div>
-        ),
+      width: '230px',
+      render: (p) => (
+        <div className="btn-action-group">
+          <button
+            type="button"
+            className="btn-action-edit"
+            onClick={() => setHistoryProduct(p)}
+            title="Xem lịch sử biến động giá"
+          >
+            Lịch sử giá
+          </button>
+          {can('products', 'edit') && (
+            <>
+              <button
+                type="button"
+                className="btn-action-edit"
+                onClick={() => openEdit(p)}
+                title="Sửa mặt hàng"
+              >
+                Sửa
+              </button>
+              <button
+                type="button"
+                className={p.status === 'ACTIVE' ? 'btn-action-toggle-hide' : 'btn-action-toggle-show'}
+                onClick={() => {
+                  update.mutate({
+                    productId: p.id,
+                    status: p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+                  });
+                  qc.invalidateQueries({ queryKey: keys.products(p.supplierId) });
+                }}
+                title={p.status === 'ACTIVE' ? 'Ẩn mặt hàng' : 'Hiện mặt hàng'}
+              >
+                {p.status === 'ACTIVE' ? 'Ẩn' : 'Hiện'}
+              </button>
+              <button
+                type="button"
+                className="btn-action-delete"
+                onClick={() => handleDelete(p)}
+                disabled={remove.isPending}
+                title="Xoá mặt hàng"
+              >
+                Xoá
+              </button>
+            </>
+          )}
+        </div>
+      ),
     },
   ];
+
+  const sourceLabel = (s: string) =>
+    s === 'CATALOG' ? 'Danh mục' : s === 'ORDER_EDIT' ? 'Sửa khi duyệt/nhận đơn' : s;
 
   const hasActiveFilters = Boolean(searchQuery || unitFilter || statusFilter);
 
@@ -399,6 +421,50 @@ export default function ProductsPanel({ supplierId }: { supplierId: string }) {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        title={historyProduct ? `Lịch sử giá — ${historyProduct.name}` : 'Lịch sử giá'}
+        open={!!historyProduct}
+        onClose={() => setHistoryProduct(null)}
+      >
+        {historyLoading && <div style={{ padding: '1rem' }}>Đang tải…</div>}
+        {!historyLoading && priceHistory.length === 0 && (
+          <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b' }}>
+            Chưa có thay đổi giá nào được ghi nhận.
+          </div>
+        )}
+        {!historyLoading && priceHistory.length > 0 && (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>Thời gian</th>
+                  <th style={{ textAlign: 'right' }}>Giá cũ</th>
+                  <th style={{ textAlign: 'right' }}>Giá mới</th>
+                  <th style={{ textAlign: 'left' }}>Nguồn</th>
+                  <th style={{ textAlign: 'left' }}>Người đổi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {priceHistory.map((h) => {
+                  const up = h.newPrice > h.oldPrice;
+                  return (
+                    <tr key={h.id}>
+                      <td data-label="Thời gian">{formatDateTime(h.createdAt)}</td>
+                      <td data-label="Giá cũ" style={{ textAlign: 'right', color: '#64748b' }}>{formatMoney(h.oldPrice)}</td>
+                      <td data-label="Giá mới" style={{ textAlign: 'right', fontWeight: 700, color: up ? '#b91c1c' : '#15803d' }}>
+                        {up ? '▲' : '▼'} {formatMoney(h.newPrice)}
+                      </td>
+                      <td data-label="Nguồn">{sourceLabel(h.source)}</td>
+                      <td data-label="Người đổi">{h.changedByName ?? h.changedBy}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Modal>
     </div>
   );

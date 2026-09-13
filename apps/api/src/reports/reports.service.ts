@@ -1,9 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import type {
+  AgingRow,
+  AgingTotals,
+  CashflowBucket,
   CompareData,
   DashboardData,
   DebtAlert,
   DebtAlertCounts,
+  PayablesAgingData,
   RangeValue,
   StatsData,
 } from '@debtflow/shared';
@@ -284,6 +288,93 @@ export class ReportsService {
       rows,
       totals: { costA, costB, change: percentChange(costB, costA) },
     };
+  }
+
+  // ---------- Tuổi nợ (AP Aging) + Dự báo dòng tiền ----------
+
+  /** Phân tầng công nợ theo tuổi (theo NCC) + gom dòng tiền phải trả sắp tới. */
+  async payablesAging(): Promise<PayablesAgingData> {
+    const payables = await this.prisma.payable.findMany({
+      where: { deletedAt: null },
+      include: {
+        payments: { select: { amount: true, status: true } },
+        supplier: { select: { name: true } },
+      },
+    });
+
+    const today = new Date();
+    const bySupplier = new Map<string, AgingRow>();
+    const totals: AgingTotals = { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90plus: 0, total: 0 };
+    const cash: Record<CashflowBucket['key'], { amount: number; count: number }> = {
+      overdue: { amount: 0, count: 0 },
+      week1: { amount: 0, count: 0 },
+      week2: { amount: 0, count: 0 },
+      month: { amount: 0, count: 0 },
+      later: { amount: 0, count: 0 },
+    };
+
+    for (const p of payables) {
+      const balance = invoiceBalance(
+        Number(p.totalAmount),
+        p.payments.map((pm) => ({ amount: Number(pm.amount), status: pm.status })),
+      );
+      if (balance <= 0) continue;
+
+      const row = bySupplier.get(p.supplierId) ?? {
+        supplierId: p.supplierId,
+        supplierName: p.supplier.name,
+        current: 0,
+        d1_30: 0,
+        d31_60: 0,
+        d61_90: 0,
+        d90plus: 0,
+        total: 0,
+      };
+
+      // overdueDays > 0 ⇒ đã quá hạn; ≤ 0 hoặc không có hạn ⇒ chưa đến hạn.
+      const overdueDays = p.dueDate ? daysDifference(p.dueDate, today) : -1;
+      if (overdueDays <= 0) row.current += balance;
+      else if (overdueDays <= 30) row.d1_30 += balance;
+      else if (overdueDays <= 60) row.d31_60 += balance;
+      else if (overdueDays <= 90) row.d61_90 += balance;
+      else row.d90plus += balance;
+      row.total += balance;
+      bySupplier.set(p.supplierId, row);
+
+      // Dòng tiền: số ngày còn tới hạn (âm ⇒ quá hạn).
+      const daysToDue = p.dueDate ? daysDifference(today, p.dueDate) : 9999;
+      let key: CashflowBucket['key'];
+      if (daysToDue < 0) key = 'overdue';
+      else if (daysToDue <= 7) key = 'week1';
+      else if (daysToDue <= 14) key = 'week2';
+      else if (daysToDue <= 30) key = 'month';
+      else key = 'later';
+      cash[key].amount += balance;
+      cash[key].count += 1;
+    }
+
+    const rows = [...bySupplier.values()].sort((a, b) => b.total - a.total);
+    for (const r of rows) {
+      totals.current += r.current;
+      totals.d1_30 += r.d1_30;
+      totals.d31_60 += r.d31_60;
+      totals.d61_90 += r.d61_90;
+      totals.d90plus += r.d90plus;
+      totals.total += r.total;
+    }
+
+    const labels: Record<CashflowBucket['key'], string> = {
+      overdue: 'Quá hạn',
+      week1: 'Trong 7 ngày',
+      week2: '8–14 ngày',
+      month: '15–30 ngày',
+      later: 'Sau 30 ngày',
+    };
+    const cashflow: CashflowBucket[] = (
+      ['overdue', 'week1', 'week2', 'month', 'later'] as CashflowBucket['key'][]
+    ).map((key) => ({ key, label: labels[key], amount: cash[key].amount, count: cash[key].count }));
+
+    return { asOf: today.toISOString().slice(0, 10), aging: { rows, totals }, cashflow };
   }
 
   // ---------- Helpers ----------

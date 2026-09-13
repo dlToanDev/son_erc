@@ -432,6 +432,15 @@ export class OrdersService {
             where: { id: it.product.id },
             data: { price: it.unitPrice },
           });
+          await tx.supplierProductPriceHistory.create({
+            data: {
+              supplierProductId: it.product.id,
+              oldPrice: it.product.price,
+              newPrice: it.unitPrice,
+              source: 'ORDER_EDIT',
+              changedBy: user.id,
+            },
+          });
         }
       }
 

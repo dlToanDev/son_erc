@@ -339,6 +339,21 @@ export const useCompare = (
     placeholderData: (prev) => prev,
   });
 
+export const usePayablesAging = () =>
+  useQuery({
+    queryKey: ['payables-aging'],
+    queryFn: reportsApi.getPayablesAging,
+    placeholderData: (prev) => prev,
+  });
+
+// ---- Lịch sử giá mặt hàng ----
+export const usePriceHistory = (supplierId: string, productId: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ['price-history', supplierId, productId],
+    queryFn: () => api.getPriceHistory(supplierId, productId),
+    enabled: enabled && !!supplierId && !!productId,
+  });
+
 // ---- Audit ----
 export const useAuditLogs = (filter: auditApi.AuditFilter) =>
   useQuery({

@@ -45,6 +45,17 @@ export interface SupplierProduct {
   note: string | null;
 }
 
+/** Một lần thay đổi giá của mặt hàng (danh mục hoặc khi sửa đơn). */
+export interface PriceHistoryEntry {
+  id: string;
+  oldPrice: number;
+  newPrice: number;
+  source: 'CATALOG' | 'ORDER_EDIT' | string;
+  changedBy: string;
+  changedByName: string | null;
+  createdAt: string;
+}
+
 /** User trả về API — không bao giờ chứa passwordHash. */
 export interface UserSummary {
   id: string;

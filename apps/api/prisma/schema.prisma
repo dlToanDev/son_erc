@@ -125,9 +125,26 @@ model SupplierProduct {
   status     EntityStatus @default(ACTIVE)
   note       String?
 
-  supplier Supplier @relation(fields: [supplierId], references: [id])
+  supplier     Supplier                      @relation(fields: [supplierId], references: [id])
+  priceHistory SupplierProductPriceHistory[]
 
   @@map("supplier_products")
+}
+
+// Lịch sử biến động giá mặt hàng (danh mục hoặc sửa khi duyệt/nhận đơn).
+model SupplierProductPriceHistory {
+  id                String   @id @default(cuid())
+  supplierProductId String   @map("supplier_product_id")
+  oldPrice          Decimal  @default(0) @map("old_price") @db.Decimal(18, 2)
+  newPrice          Decimal  @default(0) @map("new_price") @db.Decimal(18, 2)
+  source            String // 'CATALOG' | 'ORDER_EDIT'
+  changedBy         String   @map("changed_by")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  product SupplierProduct @relation(fields: [supplierProductId], references: [id], onDelete: Cascade)
+
+  @@index([supplierProductId])
+  @@map("supplier_product_price_history")
 }
 
 model PurchaseOrder {
