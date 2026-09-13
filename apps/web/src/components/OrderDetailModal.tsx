@@ -56,11 +56,6 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
     setEditOpen(false);
   }, [orderId, open]);
 
-  const restrictedForStaff =
-    !!order &&
-    !isAdmin &&
-    (order.status === 'APPROVED' || order.status === 'RECEIVED' || order.status === 'PAID');
-
   const title = order ? `Đơn hàng ${order.orderCode}` : 'Chi tiết đơn hàng';
 
   const onReject = async () => {
@@ -156,22 +151,20 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
     <Modal title={title} open={open} onClose={onClose} size="xl">
       {isLoading && <div style={{ padding: '1.5rem' }}>Đang tải…</div>}
 
-      {!isLoading && (isError || !order || restrictedForStaff) && (
+      {!isLoading && (isError || !order) && (
         <div style={{ padding: '2rem 1.5rem', textAlign: 'center' }}>
           <h3 style={{ color: '#dc2626', marginBottom: '0.75rem', fontSize: '1.1rem' }}>
-            ⚠️ Không có quyền truy cập đơn hàng
+            ⚠️ Không truy cập được đơn hàng
           </h3>
           <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.5 }}>
             {queryError instanceof Error
               ? queryError.message
-              : restrictedForStaff
-              ? 'Đơn hàng đã được Admin duyệt. Nhân viên không có quyền xem chi tiết đơn hàng này.'
               : 'Không tìm thấy đơn hàng hoặc không có quyền xem.'}
           </p>
         </div>
       )}
 
-      {!isLoading && order && !isError && !restrictedForStaff && (
+      {!isLoading && order && !isError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

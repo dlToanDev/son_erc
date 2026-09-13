@@ -139,16 +139,14 @@ export default function OrdersPage() {
           style={{ display: 'inline-flex', gap: '0.35rem', justifyContent: 'center' }}
           onClick={(e) => e.stopPropagation()}
         >
-          {(currentUser?.role === 'ADMIN' || o.status === 'PENDING') && (
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={() => setDetailOrderId(o.id)}
-              style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }}
-            >
-              Chi tiết
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => setDetailOrderId(o.id)}
+            style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }}
+          >
+            Chi tiết
+          </button>
           {can('orders', 'approve') && o.status === 'PENDING' && (
             <>
               <button
@@ -309,11 +307,7 @@ export default function OrdersPage() {
         rowKey={(o) => o.id}
         loading={isLoading}
         error={isError}
-        onRowClick={(o) => {
-          if (currentUser?.role === 'ADMIN' || o.status === 'PENDING') {
-            setDetailOrderId(o.id);
-          }
-        }}
+        onRowClick={(o) => setDetailOrderId(o.id)}
       />
 
       <Modal title="Tạo đơn đặt hàng mới" open={modalOpen} onClose={() => setModalOpen(false)} size="xl">

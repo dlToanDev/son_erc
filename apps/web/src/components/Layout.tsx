@@ -215,35 +215,43 @@ export default function Layout() {
 
       {/* Thanh điều hướng đáy màn hình cho Điện thoại (Mobile Bottom Nav Dock) */}
       <nav className="mobile-bottom-nav">
-        <NavLink to="/" end className={({ isActive }) => (isActive ? 'mobile-nav-item active' : 'mobile-nav-item')}>
-          <LayoutDashboard size={20} />
-          <span>Dashboard</span>
-        </NavLink>
+        {can('dashboard', 'view') && (
+          <NavLink to="/" end className={({ isActive }) => (isActive ? 'mobile-nav-item active' : 'mobile-nav-item')}>
+            <LayoutDashboard size={20} />
+            <span>Dashboard</span>
+          </NavLink>
+        )}
 
-        <NavLink to="/orders" className={({ isActive }) => (isActive ? 'mobile-nav-item active' : 'mobile-nav-item')}>
-          <div style={{ position: 'relative' }}>
-            <ShoppingCart size={20} />
-            {user?.role === 'ADMIN' && (pending?.count ?? 0) > 0 && (
-              <span className="mobile-nav-badge">{pending!.count}</span>
-            )}
-          </div>
-          <span>Đặt hàng</span>
-        </NavLink>
+        {can('orders', 'view') && (
+          <NavLink to="/orders" className={({ isActive }) => (isActive ? 'mobile-nav-item active' : 'mobile-nav-item')}>
+            <div style={{ position: 'relative' }}>
+              <ShoppingCart size={20} />
+              {user?.role === 'ADMIN' && (pending?.count ?? 0) > 0 && (
+                <span className="mobile-nav-badge">{pending!.count}</span>
+              )}
+            </div>
+            <span>Đặt hàng</span>
+          </NavLink>
+        )}
 
-        <NavLink to="/payables" className={({ isActive }) => (isActive ? 'mobile-nav-item active' : 'mobile-nav-item')}>
-          <div style={{ position: 'relative' }}>
-            <CreditCard size={20} />
-            {(debtAlerts?.overdueCount ?? 0) > 0 && (
-              <span className="mobile-nav-badge danger">{debtAlerts!.overdueCount}</span>
-            )}
-          </div>
-          <span>Công nợ</span>
-        </NavLink>
+        {can('payables', 'view') && (
+          <NavLink to="/payables" className={({ isActive }) => (isActive ? 'mobile-nav-item active' : 'mobile-nav-item')}>
+            <div style={{ position: 'relative' }}>
+              <CreditCard size={20} />
+              {(debtAlerts?.overdueCount ?? 0) > 0 && (
+                <span className="mobile-nav-badge danger">{debtAlerts!.overdueCount}</span>
+              )}
+            </div>
+            <span>Công nợ</span>
+          </NavLink>
+        )}
 
-        <NavLink to="/inventory" className={({ isActive }) => (isActive ? 'mobile-nav-item active' : 'mobile-nav-item')}>
-          <Warehouse size={20} />
-          <span>Kho NXT</span>
-        </NavLink>
+        {can('inventory', 'view') && (
+          <NavLink to="/inventory" className={({ isActive }) => (isActive ? 'mobile-nav-item active' : 'mobile-nav-item')}>
+            <Warehouse size={20} />
+            <span>Kho NXT</span>
+          </NavLink>
+        )}
 
         <button
           type="button"

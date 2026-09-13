@@ -44,24 +44,12 @@ async function main() {
     },
   });
 
-  // Bộ quyền vận hành cho Nhân viên (STAFF): thao tác nghiệp vụ hằng ngày,
-  // xem danh mục/nhật ký/dashboard — nhưng KHÔNG duyệt đơn, KHÔNG quản trị
-  // người dùng/cài đặt, KHÔNG sửa danh mục sản phẩm, KHÔNG xem báo cáo nâng cao.
+  // Bộ quyền MẶC ĐỊNH của Nhân viên (STAFF): CHỈ đặt hàng.
+  // Staff: tạo/sửa/huỷ đơn khi CHƯA duyệt, xem chi tiết đơn (không thấy giá),
+  // đơn đã duyệt thì chỉ xem. Mọi quyền khác TẮT — Admin bật thêm khi cần.
   const staffPermissions = [
-    { module: 'suppliers', action: 'view', allowed: true },
-    { module: 'suppliers', action: 'edit', allowed: true },
-    { module: 'products', action: 'view', allowed: true },
     { module: 'orders', action: 'view', allowed: true },
     { module: 'orders', action: 'edit', allowed: true },
-    { module: 'receipts', action: 'view', allowed: true },
-    { module: 'receipts', action: 'edit', allowed: true },
-    { module: 'payables', action: 'view', allowed: true },
-    { module: 'payables', action: 'pay', allowed: true },
-    { module: 'payments', action: 'view', allowed: true },
-    { module: 'inventory', action: 'view', allowed: true },
-    { module: 'inventory', action: 'edit', allowed: true },
-    { module: 'audit', action: 'view', allowed: true },
-    { module: 'dashboard', action: 'view', allowed: true },
   ];
 
   const staff1 = await prisma.user.create({

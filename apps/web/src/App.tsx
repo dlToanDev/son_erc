@@ -18,8 +18,15 @@ import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
 import RequireAuth from './components/RequireAuth';
 import Layout from './components/Layout';
+import { useAuthStore } from './store/auth';
 
 import MobileAppPage from './pages/MobileAppPage';
+
+/** Trang chủ: có quyền Dashboard thì xem Dashboard, không thì về Đặt hàng (staff). */
+function HomeRoute() {
+  const can = useAuthStore((s) => s.can);
+  return can('dashboard', 'view') ? <DashboardPage /> : <Navigate to="/orders" replace />;
+}
 
 export default function App() {
   return (
@@ -34,7 +41,7 @@ export default function App() {
             </RequireAuth>
           }
         >
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/" element={<HomeRoute />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/suppliers/:id" element={<SupplierDetailPage />} />
           <Route path="/products" element={<ProductsPage />} />

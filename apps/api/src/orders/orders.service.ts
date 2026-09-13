@@ -55,13 +55,8 @@ export class OrdersService {
     });
     if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
 
-    if (
-      user?.role !== 'ADMIN' &&
-      (order.status === 'APPROVED' || order.status === 'RECEIVED' || order.status === 'PAID')
-    ) {
-      throw new ForbiddenException('Đơn hàng đã được duyệt. Nhân viên không được phép xem chi tiết.');
-    }
-
+    // Nhân viên xem được chi tiết mọi đơn (read-only); giá được ẩn ở giao diện.
+    // Đơn đã duyệt: staff chỉ xem, không sửa/huỷ/duyệt (chặn ở update/transition).
     return this.serialize(order);
   }
 
