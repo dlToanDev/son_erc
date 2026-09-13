@@ -1,4 +1,5 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { PERMISSION_MODULES, type PermissionEntry } from '@debtflow/shared';
 import { Shield, CheckSquare, Square, Sparkles } from 'lucide-react';
 import DataTable, { Column } from '../components/DataTable';
@@ -52,6 +53,77 @@ const ACTION_CONFIG: Record<string, { label: string; desc: string; color: string
     color: '#9a3412', bg: '#fff7ed', border: '#fed7aa',
   },
 };
+
+/** Dấu "i" — di chuột (hoặc bấm trên điện thoại) hiện hộp hướng dẫn. */
+function InfoTip({ text, active, color }: { text: string; active: boolean; color: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const show = () => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    const width = 260;
+    const left = Math.max(12, Math.min(r.left, window.innerWidth - width - 12));
+    setPos({ top: r.bottom + 8, left });
+  };
+  const hide = () => setPos(null);
+
+  return (
+    <span
+      ref={ref}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (pos) hide();
+        else show();
+      }}
+      aria-label={text}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '16px',
+        height: '16px',
+        borderRadius: '50%',
+        border: `1.5px solid ${active ? color : '#cbd5e1'}`,
+        color: active ? color : '#94a3b8',
+        fontSize: '0.72rem',
+        fontWeight: 700,
+        fontStyle: 'italic',
+        lineHeight: 1,
+        cursor: 'help',
+      }}
+    >
+      i
+      {pos &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              top: pos.top,
+              left: pos.left,
+              width: 260,
+              zIndex: 10001,
+              background: '#0f172a',
+              color: '#fff',
+              fontSize: '0.8rem',
+              fontWeight: 500,
+              fontStyle: 'normal',
+              lineHeight: 1.5,
+              padding: '0.6rem 0.75rem',
+              borderRadius: 8,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+            }}
+          >
+            {text}
+          </div>,
+          document.body,
+        )}
+    </span>
+  );
+}
 
 export default function UsersPage() {
   const currentUser = useAuthStore((s) => s.user);
@@ -492,31 +564,7 @@ export default function UsersPage() {
                                     style={{ width: '15px', height: '15px', accentColor: actCfg.color, cursor: 'pointer' }}
                                   />
                                   <span>{actCfg.label}</span>
-                                  <span
-                                    title={actCfg.desc}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                    }}
-                                    aria-label={actCfg.desc}
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      width: '16px',
-                                      height: '16px',
-                                      borderRadius: '50%',
-                                      border: `1.5px solid ${checked ? actCfg.color : '#cbd5e1'}`,
-                                      color: checked ? actCfg.color : '#94a3b8',
-                                      fontSize: '0.72rem',
-                                      fontWeight: 700,
-                                      fontStyle: 'italic',
-                                      lineHeight: 1,
-                                      cursor: 'help',
-                                    }}
-                                  >
-                                    i
-                                  </span>
+                                  <InfoTip text={actCfg.desc} active={checked} color={actCfg.color} />
                                 </label>
                               );
                             })}
