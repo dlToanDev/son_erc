@@ -79,7 +79,7 @@ export const PERMISSION_MODULES: { module: string; actions: string[] }[] = [
   { module: 'dashboard', actions: ['view'] },
   { module: 'suppliers', actions: ['view', 'edit'] },
   { module: 'products', actions: ['view', 'edit'] },
-  { module: 'orders', actions: ['view', 'edit', 'approve', 'viewPrice'] },
+  { module: 'orders', actions: ['view', 'edit', 'approve', 'viewPrice', 'print'] },
   { module: 'receipts', actions: ['view', 'edit'] },
   { module: 'payables', actions: ['view', 'pay'] },
   { module: 'payments', actions: ['view'] },

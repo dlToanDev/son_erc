@@ -157,7 +157,7 @@ export default function SuppliersPage() {
     <section className="page">
       <header className="page-header">
         <h2>Nhà cung cấp</h2>
-        <div className="page-actions" style={{ flexWrap: 'wrap', gap: '0.6rem' }}>
+        <div className="page-actions">
           <UnifiedFacilitySelect
             facilities={facilities}
             selectedIds={selectedFacilityIds}

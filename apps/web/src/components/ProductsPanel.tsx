@@ -171,7 +171,14 @@ export default function ProductsPanel({ supplierId }: { supplierId: string }) {
       ),
     },
     { key: 'unit', header: 'ĐVT', align: 'center', width: '80px', render: (p) => p.unit },
-    { key: 'price', header: 'Đơn giá', align: 'right', width: '130px', render: (p) => formatMoney(p.price) },
+    {
+      key: 'price',
+      header: 'Đơn giá',
+      align: 'right',
+      width: '150px',
+      // nowrap: "10.000 VND" không được xuống dòng giữa số và đơn vị tiền
+      render: (p) => <span style={{ whiteSpace: 'nowrap' }}>{formatMoney(p.price)}</span>,
+    },
     {
       key: 'supplier',
       header: 'Nhà cung cấp',

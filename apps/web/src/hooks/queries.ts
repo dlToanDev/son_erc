@@ -20,6 +20,7 @@ export const keys = {
   orders: (facilityId?: string, status?: string) =>
     ['orders', facilityId ?? '', status ?? ''] as const,
   order: (id: string) => ['order', id] as const,
+  orderPrint: (id: string) => ['order-print', id] as const,
   pendingCount: ['orders', 'pending-count'] as const,
   receipts: (f?: Record<string, string | undefined>) => ['receipts', f ?? {}] as const,
   receipt: (id: string) => ['receipt', id] as const,
@@ -138,6 +139,15 @@ export const useOrders = (facilityId?: string, status?: string) =>
 
 export const useOrder = (id: string) =>
   useQuery({ queryKey: keys.order(id), queryFn: () => ordersApi.getOrder(id), enabled: !!id });
+
+/** Dữ liệu in đơn — chỉ gọi khi thực sự mở trang in (403 nếu không có quyền). */
+export const useOrderPrint = (id: string) =>
+  useQuery({
+    queryKey: keys.orderPrint(id),
+    queryFn: () => ordersApi.getOrderPrintData(id),
+    enabled: !!id,
+    retry: false,
+  });
 
 export const usePendingCount = (enabled: boolean) =>
   useQuery({

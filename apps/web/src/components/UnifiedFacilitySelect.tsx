@@ -92,17 +92,19 @@ export default function UnifiedFacilitySelect({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '0.5rem',
-          padding: '0.6rem 1rem',
+          boxSizing: 'border-box',
+          padding: '0 0.85rem',
           background: '#fff',
-          border: '1px solid #cbd5e1',
-          borderRadius: '12px',
-          fontSize: '0.92rem',
-          fontWeight: 700,
+          border: '1px solid var(--df-border)',
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          fontWeight: 600,
           color: '#0f172a',
           cursor: 'pointer',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
           width: '100%',
-          minHeight: '46px',
+          /* Cùng chiều cao với .search-input và .btn-primary trên thanh lọc */
+          height: '40px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

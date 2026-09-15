@@ -21,6 +21,7 @@ import Layout from './components/Layout';
 import { useAuthStore } from './store/auth';
 
 import MobileAppPage from './pages/MobileAppPage';
+import OrderPrintPage from './pages/OrderPrintPage';
 
 /** Trang chủ: có quyền Dashboard thì xem Dashboard, không thì về Đặt hàng (staff). */
 function HomeRoute() {
@@ -34,6 +35,15 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/mobile" element={<MobileAppPage />} />
+        {/* Trang in đơn gửi NCC: cần đăng nhập nhưng KHÔNG dùng Layout (bản in sạch). */}
+        <Route
+          path="/orders/:id/print"
+          element={
+            <RequireAuth>
+              <OrderPrintPage />
+            </RequireAuth>
+          }
+        />
         <Route
           element={
             <RequireAuth>

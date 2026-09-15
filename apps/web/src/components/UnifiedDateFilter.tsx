@@ -66,19 +66,21 @@ export default function UnifiedDateFilter({ from, to, onChange }: UnifiedDateFil
   };
 
   return (
-    <div className="unified-date-filter" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+    <div className="unified-date-filter" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
       <div
         className="udf-preset"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: '#f8fafc',
-          padding: '0.55rem 0.9rem',
-          borderRadius: '12px',
-          border: '1px solid #cbd5e1',
-          minHeight: '46px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+          boxSizing: 'border-box',
+          background: '#fff',
+          padding: '0 0.85rem',
+          borderRadius: '8px',
+          border: '1px solid var(--df-border)',
+          /* Cùng chiều cao 40px với mọi ô khác trên thanh lọc */
+          height: '40px',
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
@@ -89,8 +91,8 @@ export default function UnifiedDateFilter({ from, to, onChange }: UnifiedDateFil
             style={{
               border: 'none',
               background: 'transparent',
-              fontSize: '0.92rem',
-              fontWeight: 700,
+              fontSize: '0.9rem',
+              fontWeight: 600,
               color: '#0f172a',
               outline: 'none',
               cursor: 'pointer',
@@ -116,17 +118,18 @@ export default function UnifiedDateFilter({ from, to, onChange }: UnifiedDateFil
             onChange(e.target.value, to);
           }}
           style={{
-            padding: '0.55rem 0.85rem',
-            borderRadius: '12px',
-            border: '1px solid #cbd5e1',
-            fontSize: '0.92rem',
-            fontWeight: 700,
+            boxSizing: 'border-box',
+            padding: '0 0.85rem',
+            borderRadius: '8px',
+            border: '1px solid var(--df-border)',
+            fontSize: '0.9rem',
+            fontWeight: 600,
             color: '#0f172a',
             background: '#fff',
             flex: '1 1 0',
-            minHeight: '44px',
+            height: '40px',
             textAlign: 'center',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
           }}
         />
         <span style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600, flexShrink: 0 }}>đến</span>
@@ -138,17 +141,18 @@ export default function UnifiedDateFilter({ from, to, onChange }: UnifiedDateFil
             onChange(from, e.target.value);
           }}
           style={{
-            padding: '0.55rem 0.85rem',
-            borderRadius: '12px',
-            border: '1px solid #cbd5e1',
-            fontSize: '0.92rem',
-            fontWeight: 700,
+            boxSizing: 'border-box',
+            padding: '0 0.85rem',
+            borderRadius: '8px',
+            border: '1px solid var(--df-border)',
+            fontSize: '0.9rem',
+            fontWeight: 600,
             color: '#0f172a',
             background: '#fff',
             flex: '1 1 0',
-            minHeight: '44px',
+            height: '40px',
             textAlign: 'center',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
           }}
         />
       </div>

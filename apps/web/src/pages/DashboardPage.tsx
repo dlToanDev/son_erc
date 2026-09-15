@@ -106,7 +106,7 @@ export default function DashboardPage() {
       {/* 1. Thanh tiêu đề & Bộ lọc Cơ sở + Bộ lọc Ngày tháng năm */}
       <header className="page-header">
         <h2>Dashboard - Tổng quan hệ thống</h2>
-        <div className="page-actions" style={{ flexWrap: 'wrap', gap: '0.6rem' }}>
+        <div className="page-actions">
           <UnifiedFacilitySelect
             facilities={facilities}
             selectedIds={selectedFacilityIds}

@@ -1,4 +1,4 @@
-import type { PurchaseOrderData, ReceiveOrderResult } from '@debtflow/shared';
+import type { OrderPrintData, PurchaseOrderData, ReceiveOrderResult } from '@debtflow/shared';
 import { apiGet, apiPost, apiPut, apiDelete } from './client';
 
 export interface CreateOrderInput {
@@ -26,6 +26,8 @@ export const listOrders = (filter?: { facilityId?: string; status?: string }) =>
 
 export const getOrder = (id: string) => apiGet<PurchaseOrderData>(`/orders/${id}`);
 export const getPendingCount = () => apiGet<{ count: number }>('/orders/pending-count');
+/** Dữ liệu in đơn gửi NCC — BE chặn bằng quyền orders.print. */
+export const getOrderPrintData = (id: string) => apiGet<OrderPrintData>(`/orders/${id}/print`);
 export const createOrder = (body: CreateOrderInput) => apiPost<PurchaseOrderData>('/orders', body);
 export const approveOrder = (id: string) =>
   apiPost<PurchaseOrderData>(`/orders/${id}/approve`, {});

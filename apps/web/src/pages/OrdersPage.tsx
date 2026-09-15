@@ -135,38 +135,32 @@ export default function OrdersPage() {
       header: 'Thao tác',
       align: 'center',
       render: (o) => (
-        <div
-          style={{ display: 'inline-flex', gap: '0.35rem', justifyContent: 'center' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() => setDetailOrderId(o.id)}
-            style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }}
-          >
+        <div className="row-actions" onClick={(e) => e.stopPropagation()}>
+          <button type="button" className="btn-act btn-act--gray" onClick={() => setDetailOrderId(o.id)}>
             Chi tiết
           </button>
+
+          {/* In đơn gửi NCC — chỉ đơn đã duyệt trở đi (khớp PRINTABLE_STATUSES ở backend). */}
+          {can('orders', 'print') && ['APPROVED', 'RECEIVED', 'PAID'].includes(o.status) && (
+            <button
+              type="button"
+              className="btn-act btn-act--blue"
+              title="Mở bản in đơn hàng để gửi nhà cung cấp"
+              onClick={() => window.open(`/orders/${o.id}/print`, '_blank')}
+            >
+              In đơn
+            </button>
+          )}
+
           {can('orders', 'approve') && o.status === 'PENDING' && (
             <>
-              <button
-                type="button"
-                onClick={() => setOrderToApprove(o)}
-                style={{
-                  border: '1px solid #bbf7d0',
-                  background: '#f0fdf4',
-                  color: '#15803d',
-                  padding: '0.2rem 0.55rem',
-                  borderRadius: '4px',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
+              <button type="button" className="btn-act btn-act--green" onClick={() => setOrderToApprove(o)}>
                 Duyệt
               </button>
               <button
                 type="button"
+                className="btn-act btn-act--red"
+                disabled={reject.isPending}
                 onClick={async () => {
                   const reason = window.prompt('Nhập lý do từ chối đơn hàng (nếu có):', 'Từ chối đơn đặt hàng');
                   if (reason !== null) {
@@ -177,17 +171,6 @@ export default function OrdersPage() {
                     }
                   }
                 }}
-                disabled={reject.isPending}
-                style={{
-                  border: '1px solid #fca5a5',
-                  background: '#fef2f2',
-                  color: '#dc2626',
-                  padding: '0.2rem 0.55rem',
-                  borderRadius: '4px',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
               >
                 Từ chối
               </button>
@@ -195,46 +178,23 @@ export default function OrdersPage() {
           )}
 
           {can('orders', 'approve') && o.status === 'APPROVED' && (
-            <button
-              type="button"
-              onClick={() => setOrderToReceive(o)}
-              style={{
-                border: '1px solid #99f6e4',
-                background: '#f0fdfa',
-                color: '#0f766e',
-                padding: '0.2rem 0.55rem',
-                borderRadius: '4px',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
+            <button type="button" className="btn-act btn-act--teal" onClick={() => setOrderToReceive(o)}>
               Nhận hàng
             </button>
           )}
 
           {can('orders', 'approve') && o.status === 'RECEIVED' && (
-            <button
-              type="button"
-              onClick={() => setOrderToPay(o)}
-              style={{
-                border: '1px solid #bbf7d0',
-                background: '#f0fdf4',
-                color: '#15803d',
-                padding: '0.2rem 0.55rem',
-                borderRadius: '4px',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
+            <button type="button" className="btn-act btn-act--green" onClick={() => setOrderToPay(o)}>
               Thanh toán
             </button>
           )}
 
-          {((o.status === 'PENDING' && can('orders', 'edit')) || (o.status === 'APPROVED' && currentUser?.role === 'ADMIN')) && (
+          {((o.status === 'PENDING' && can('orders', 'edit')) ||
+            (o.status === 'APPROVED' && currentUser?.role === 'ADMIN')) && (
             <button
               type="button"
+              className="btn-act btn-act--gray"
+              disabled={cancel.isPending}
               onClick={async () => {
                 if (window.confirm(`Bạn có chắc muốn huỷ đơn hàng ${o.orderCode}?`)) {
                   try {
@@ -243,17 +203,6 @@ export default function OrdersPage() {
                     alert(err instanceof Error ? err.message : 'Huỷ đơn thất bại');
                   }
                 }
-              }}
-              disabled={cancel.isPending}
-              style={{
-                border: '1px solid #cbd5e1',
-                background: '#fff',
-                color: '#64748b',
-                padding: '0.2rem 0.55rem',
-                borderRadius: '4px',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                cursor: 'pointer',
               }}
             >
               Huỷ

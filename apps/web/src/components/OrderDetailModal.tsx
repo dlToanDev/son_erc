@@ -25,6 +25,9 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
   // Xem tiền: Admin luôn thấy; nhân viên chỉ thấy nếu được cấp quyền orders.viewPrice.
   const canSeeMoney = isAdmin || can('orders', 'viewPrice');
   const { data: order, isLoading, isError, error: queryError } = useOrder(orderId);
+  // Chỉ in được đơn đã duyệt trở đi (khớp PRINTABLE_STATUSES ở backend).
+  const canPrint =
+    can('orders', 'print') && !!order && ['APPROVED', 'RECEIVED', 'PAID'].includes(order.status);
   const { reject, cancel, update, remove } = useOrderMutations();
 
   const [error, setError] = useState('');
@@ -208,6 +211,15 @@ export default function OrderDetailModal({ orderId, open, onClose }: Props) {
                 (order.status === 'APPROVED' && isAdmin)) && (
                 <button className="btn-ghost" onClick={onCancel} disabled={cancel.isPending}>
                   {order.status === 'APPROVED' ? 'Huỷ đơn (Quyền Admin)' : 'Huỷ đơn'}
+                </button>
+              )}
+              {canPrint && (
+                <button
+                  className="btn-ghost"
+                  onClick={() => window.open(`/orders/${order.id}/print`, '_blank')}
+                  title="Mở bản in đơn hàng để gửi nhà cung cấp"
+                >
+                  🖨 In đơn gửi NCC
                 </button>
               )}
               {isAdmin && (

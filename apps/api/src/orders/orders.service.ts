@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { PurchaseOrderData, ReceiveOrderResult } from '@debtflow/shared';
+import type { OrderPrintData, PurchaseOrderData, ReceiveOrderResult } from '@debtflow/shared';
 import { RequestUser } from '../auth/jwt.constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -16,6 +16,9 @@ import { PayOrderDto, CreateOrderDto, RejectOrderDto, UpdateOrderDto } from './d
 
 /** Công nợ mặc định đáo hạn sau 30 ngày kể từ ngày duyệt. */
 const DEFAULT_DUE_DAYS = 30;
+
+/** Chỉ đơn đã duyệt trở đi mới được in gửi NCC. */
+const PRINTABLE_STATUSES: string[] = ['APPROVED', 'RECEIVED', 'PAID'];
 
 const ORDER_INCLUDE = {
   items: true,
@@ -654,6 +657,64 @@ export class OrdersService {
       createdAt: order.createdAt.toISOString(),
       items,
       total: items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0),
+    };
+  }
+
+  /**
+   * Dữ liệu in đơn gửi NCC — chỉ đơn ĐÃ DUYỆT trở đi (đơn chưa duyệt/đã huỷ
+   * không được gửi ra ngoài). Ghi audit để truy vết đơn đã gửi cho NCC.
+   */
+  async getPrintData(id: string, userId: string): Promise<OrderPrintData> {
+    const order = await this.prisma.purchaseOrder.findFirst({
+      where: { id, deletedAt: null },
+      include: {
+        items: true,
+        supplier: {
+          select: { name: true, address: true, phone: true, taxCode: true, contactPerson: true },
+        },
+        facility: { select: { name: true, address: true } },
+      },
+    });
+    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
+    if (!PRINTABLE_STATUSES.includes(order.status)) {
+      throw new BadRequestException(
+        `Chỉ in được đơn đã duyệt trở đi (hiện tại: ${order.status})`,
+      );
+    }
+
+    const items = order.items.map((i) => {
+      const quantity = Number(i.quantity);
+      const unitPrice = Number(i.unitPrice);
+      return {
+        id: i.id,
+        name: i.name,
+        unit: i.unit,
+        quantity,
+        unitPrice,
+        lineTotal: quantity * unitPrice,
+      };
+    });
+
+    await this.audit.log({
+      userId,
+      action: 'PRINT_ORDER',
+      entityType: 'ORDER',
+      entityId: order.id,
+      detail: `In đơn ${order.orderCode} gửi NCC ${order.supplier.name}`,
+    });
+
+    return {
+      id: order.id,
+      orderCode: order.orderCode,
+      status: order.status,
+      note: order.note,
+      expectedDate: order.expectedDate?.toISOString() ?? null,
+      createdAt: order.createdAt.toISOString(),
+      reviewedAt: order.reviewedAt?.toISOString() ?? null,
+      supplier: order.supplier,
+      facility: order.facility,
+      items,
+      total: items.reduce((sum, i) => sum + i.lineTotal, 0),
     };
   }
 }

@@ -37,6 +37,13 @@ export class OrdersController {
     return this.orders.findOne(id, user);
   }
 
+  /** Dữ liệu in đơn gửi NCC — chỉ người có quyền orders.print (ADMIN mặc định có). */
+  @Get(':id/print')
+  @RequirePermission('orders', 'print')
+  print(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.orders.getPrintData(id, user.id);
+  }
+
   @Post()
   @RequirePermission('orders', 'edit')
   create(@Body() dto: CreateOrderDto, @CurrentUser() user: RequestUser) {

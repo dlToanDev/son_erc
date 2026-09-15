@@ -43,6 +43,43 @@ export interface PurchaseOrderData {
   total: number; // sum(quantity × unitPrice)
 }
 
+/** 1 dòng hàng trên bản in gửi NCC — kèm thành tiền đã tính sẵn. */
+export interface OrderPrintItem {
+  id: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number; // quantity × unitPrice
+}
+
+/**
+ * Dữ liệu in đơn đặt hàng gửi NCC (GET /orders/:id/print, quyền orders.print).
+ * Khác PurchaseOrderData: kèm thông tin liên hệ NCC + địa chỉ cơ sở nhận hàng.
+ */
+export interface OrderPrintData {
+  id: string;
+  orderCode: string;
+  status: OrderStatusValue;
+  note: string | null;
+  expectedDate: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+  supplier: {
+    name: string;
+    address: string | null;
+    phone: string | null;
+    taxCode: string | null;
+    contactPerson: string | null;
+  };
+  facility: {
+    name: string;
+    address: string | null;
+  };
+  items: OrderPrintItem[];
+  total: number;
+}
+
 /**
  * Kết quả NHẬN HÀNG — sinh phiếu nhập + công nợ trong 1 transaction.
  * (Duyệt đơn không còn sinh công nợ; xem OrdersService.receive.)
